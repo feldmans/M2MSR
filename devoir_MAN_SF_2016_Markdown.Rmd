@@ -1,0 +1,157 @@
+---
+title: "devoir MAN 2016"
+author: "sarah FELDMAN"
+date: "21 octobre 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Q1/Dans un premier temps décrivez vos variables.
+```{r}
+library(psy)
+library(corrplot)
+
+rt <- read.csv2("data/presentationTPretinol.csv")
+```
+
+#Nombre de variables
+```{r cars}
+dim(rt)
+```
+J'ai 14 variables.
+
+#Type de variables
+```{r}
+summary(rt)
+```
+Les variables sont reconnues comme quantitatives 
+mais en regardant plus attentivement les min et max on peut voir que sexe a un minimum de 1 et un maximum de 2 c'est donc une variables qualitative binaire.
+Les autres variables sont quantitatives:
+soit continues : age, bmi, calories, graisses, fibres, alcool, cholestérol, betadiet,retdiet,betaplasma,retplasma
+soit discètes : tabac, vitamine
+NB: tabac est limite entre qualitatif à 3 classes et quantitatif...
+
+#Données manquantes
+summary ne montre pas de données manquantes mais je préfère m'en assurer en demandant spécifiquement de sortir les NA:
+```{r}
+for (i in names(rt)){
+  res <-  c(i,sum(is.na(rt[ , i])))
+  print(res)
+}
+```
+
+#Données abberrantes
+
+Observer ses variables sert également à dépister les "bizarreries".
+Par exemple, j'ai un doute concernant le max d'alcool, je vais donc regarder plus attentivement la variable, par exemple avec une table
+```{r}
+table(rt$alcool)
+
+```
+en effet, je passe de 35 à 203 verres...203/7=29 verres par jour, il y a probablement un erreur de codage
+
+#Distribution des variables
+```{r ,echo=FALSE}
+
+par(mfrow=c(2,3))
+non_cont<- c("sexe","tabac","vitamine")
+names_rt<-names(rt)[! names(rt) %in% non_cont]
+for (i in names_rt){
+print(hist(rt[,i],breaks = 20, main=i)) #je rajoute des breaks pour avoir un histogramme plus précis
+} 
+dev.off()
+```
+-bmi, graisses, cholestérol, betadiet, retdiet et betaplasme on des distribution à peu près normales mais asymétriques.
+-calories, fibres, ret plasma ont de distributions d'allure normales
+-age a une distribution irrégulière avec 2 cloches à 40 et 75 ans.
+-alcool a une distribution très asymétrique qui ne semble pas normale
+
+## Q2/Etudiez les relations existant entre toutes les paires possibles de variables. 
+#NB : ce ne sont que les 9 variables qui sont concernées
+```{r,echo=FALSE}
+var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
+var %in% names(rt)#pour voir quelle variable j'ai mal recopié
+
+```
+Je peux faire une matrice de corrélation.
+Aucune condition n'est nécessaire pour faire des coefficients de corrélation. C'est pour les tester que nous avons besoin de vérifier les confidions de validité
+```{r}
+mat <- round(cor(rt[,var]),3)
+print(mat)
+
+```
+scatter plot?
+Il faut ensuite interprêter la matrice. Pour cela je peux faire des schéma
+
+```{r}
+corrplot(cor(rt[,var]),method="circle")
+```
+
+```{r}
+mdspca(rt[,var])
+```
+bmi, tabac et vitamine sont très proches du centre du cercle donc non interprétables
+Par contre on peut voir que les paires retdiet-cholestérol, retplasma-age sont fortement associés (corrélation positive), et ces deux groupes de variables sont indépendants l'un de l'autre car forme un angle droit avec le centre.
+sexe est également indépendant de retdiet et cholestérol.
+Alcool-sexe est négativement corrélée
+
+Je peux aussi sélectionner dans la matrice les valeurs absolues supérieures ou égales à certain niveau de corrélation
+```{r,echo=FALSE}
+couples<-lapply(c(0.2,0.4),function(w){
+  #pour supprimer les doublons
+  mat2<- lower.tri(mat,diag=FALSE);rownames(mat2)<-rownames(mat) ; colnames(mat2) <- colnames(mat) 
+  mat2 <- ifelse(mat2==TRUE,mat,0)
+  #pour chercher les coefficients de corrélation superieur à w
+  w_r <- which(abs(mat2)>=w )
+  #pour trouver les noms de ligne et colonne de ces coefficients
+  which_couple <- lapply(w_r,function(x){
+    k <- arrayInd(x, dim(mat2))
+    paste(rownames(mat2)[k[,1]],"-", colnames(mat2)[k[,2]])
+  })
+  #Je colle les listes
+  which_couple <- data.frame(do.call(rbind,which_couple))
+  #Je nomme les 2 listes de niveau supérieur selon la valeur du coefficient
+  colnames(which_couple) <- paste("couples pour r=",w) 
+  return(which_couple)
+})
+print(couples)
+
+```
+
+Est-ce pertinent de faire de tests de corrélation pour chaque variable?
+mat_test <-round(cor.test(rt[,var]),3) #ne marche pas
+
+
+
+Pour r>=0.2, 5 couples ressortent:
+age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe,retdiet-cholestérol
+
+Il n'y a qu'un couple qui ressort pour r>=0.4 :
+retdiet-cholestérol
+
+#Faut il faire des tests?
+#Quels sont les conditions de validité?
+
+## Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
+
+faire une acp focalisée
+```{r}
+var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
+my_formula<-as.formula(paste("retplasma~",paste(var[-1],collapse='+'))) #pour éviter de tout réécrire à la main...
+mod <- lm(my_formula,rt)
+
+mod_int <- lm(retplasma ~ age + sexe * bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
