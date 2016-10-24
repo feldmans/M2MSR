@@ -1,4 +1,6 @@
-install.packages("corrplot")
+#install.packages("rmarkdown")
+#install.packages("corrplot")
+#install.packages("psy")
 library(corrplot)
 library(psy)
 

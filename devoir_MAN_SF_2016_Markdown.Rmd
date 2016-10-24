@@ -2,7 +2,7 @@
 title: "devoir MAN 2016"
 author: "sarah FELDMAN"
 date: "21 octobre 2016"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -63,6 +63,9 @@ for (i in names_rt){
 print(hist(rt[,i],breaks = 20, main=i)) #je rajoute des breaks pour avoir un histogramme plus précis
 } 
 dev.off()
+
+varnorm<- c("retplasma", "bmi", "cholesterol", "retdiet", "graisses", "betadiet", "betaplasma", "calories", "fibres")
+varnnorm<-c("age", "sexe", "tabac", "vitamine", "alcool")
 ```
 -bmi, graisses, cholestérol, betadiet, retdiet et betaplasme on des distribution à peu près normales mais asymétriques.
 -calories, fibres, ret plasma ont de distributions d'allure normales
@@ -70,15 +73,15 @@ dev.off()
 -alcool a une distribution très asymétrique qui ne semble pas normale
 
 ## Q2/Etudiez les relations existant entre toutes les paires possibles de variables. 
-#NB : ce ne sont que les 9 variables qui sont concernées
+NB : ce ne sont que les 9 variables qui sont concernées
 ```{r,echo=FALSE}
 var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
-var %in% names(rt)#pour voir quelle variable j'ai mal recopié
+#var %in% names(rt)#pour voir quelle variable j'ai mal recopié
 
 ```
 Je peux faire une matrice de corrélation.
 Aucune condition n'est nécessaire pour faire des coefficients de corrélation. C'est pour les tester que nous avons besoin de vérifier les confidions de validité
-```{r}
+```{r, echo = FALSE}
 mat <- round(cor(rt[,var]),3)
 print(mat)
 
@@ -86,11 +89,11 @@ print(mat)
 scatter plot?
 Il faut ensuite interprêter la matrice. Pour cela je peux faire des schéma
 
-```{r}
+```{r , echo=FALSE}
 corrplot(cor(rt[,var]),method="circle")
 ```
 
-```{r}
+```{r, echo=FALSE}
 mdspca(rt[,var])
 ```
 bmi, tabac et vitamine sont très proches du centre du cercle donc non interprétables
@@ -109,12 +112,14 @@ couples<-lapply(c(0.2,0.4),function(w){
   #pour trouver les noms de ligne et colonne de ces coefficients
   which_couple <- lapply(w_r,function(x){
     k <- arrayInd(x, dim(mat2))
-    paste(rownames(mat2)[k[,1]],"-", colnames(mat2)[k[,2]])
+    #paste(rownames(mat2)[k[,1]],"-", colnames(mat2)[k[,2]])
+    data.frame(var1=rownames(mat2)[k[,1]], var2=colnames(mat2)[k[,2]],r=mat2[x])
   })
   #Je colle les listes
+  #browser()
   which_couple <- data.frame(do.call(rbind,which_couple))
   #Je nomme les 2 listes de niveau supérieur selon la valeur du coefficient
-  colnames(which_couple) <- paste("couples pour r=",w) 
+  #colnames(which_couple) <- c(paste0("var1.r",w),paste0("var2.r",w)) 
   return(which_couple)
 })
 print(couples)
@@ -124,7 +129,28 @@ print(couples)
 Est-ce pertinent de faire de tests de corrélation pour chaque variable?
 mat_test <-round(cor.test(rt[,var]),3) #ne marche pas
 
+Attention aux conditions de validité: 
+une des 2 variables du couple testé doit être normale
+```{r, echo=FALSE}
+couplesb <- couples[[1]]
+couplesb$testvalid <- ifelse( couplesb$var1 %in% varnorm | couplesb$var2 %in% varnorm,TRUE,FALSE) 
+couplesb$test<-sapply(1:nrow(couplesb), function(x) {
+  .var1 <- couplesb[x,1]
+  .var2 <- couplesb[x,2]
+  #browser()
+  .var1rt <- rt[,as.character(.var1)]
+  .var2rt <- rt[,as.character(.var2)]
+  testcouple<-cor.test(.var1rt,.var2rt)
+  # if couplesb$testvalid[x] testcouple<-cor.test(.var1rt,.var2rt)
+  # else testcouple <- cor.test(.var1rt,.var2rt, method="spearman") #je préfère ne pas utiliser du non paramétrique car m'empêcherait de faire des analyses plus poussées ensuite
+  ##browser()
+  pcor<-round(testcouple$p.value,5)
+  return(pcor)
+})
 
+print(couplesb)
+#couples$test <- cor.test(get(paste0("rt$",var1)),get(paste0("rt$",var2)))
+```
 
 Pour r>=0.2, 5 couples ressortent:
 age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe,retdiet-cholestérol
@@ -132,8 +158,7 @@ age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe,retdiet-cholestérol
 Il n'y a qu'un couple qui ressort pour r>=0.4 :
 retdiet-cholestérol
 
-#Faut il faire des tests?
-#Quels sont les conditions de validité?
+Faut il faire des tests?
 
 ## Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
 
