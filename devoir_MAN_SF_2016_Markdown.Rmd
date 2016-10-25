@@ -2,7 +2,7 @@
 title: "devoir MAN 2016"
 author: "sarah FELDMAN"
 date: "21 octobre 2016"
-output: html_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -18,6 +18,7 @@ library(ggplot2)
 library(car)
 library(dplyr)
 library(grid)
+
 
 rt <- read.csv2("data/presentationTPretinol.csv")
 ```
@@ -242,11 +243,14 @@ mod_order <- mod_inter[isort,]
 mod_order$Pr..Chi. <- round(mod_order$Pr..Chi.,4) 
 mod_order$signif <- ifelse(mod_order$Pr..Chi.<= 0.05,"*","")
 
-mytheme <- ttheme_default(base_size=6)
+mytheme <- ttheme_default(base_size=10)
 
 a <-tableGrob(mod_order[1:14,], rows = rownames(mod_order)[1:14],theme = mytheme)
 b <- tableGrob(mod_order[15:nrow(mod_order),], rows = rownames(mod_order)[15:nrow(mod_order)],theme = mytheme)
-grid.arrange(a,b,nrow=2)
+grid.draw(a)
+grid.newpage()
+grid.draw(b)
+#grid.arrange(a,b,nrow=2)
 ```
 
 Je trace la représentation graphique des pvalue des 28 intéractions possibles
@@ -280,11 +284,15 @@ mod_order.bin <- mod_inter.bin[isort.bin,]
 mod_order.bin$Pr..Chi. <- round(mod_order.bin$Pr..Chi.,4) 
 mod_order.bin$signif <- ifelse(mod_order.bin$Pr..Chi.<= 0.05,"*","")
 
-mytheme <- ttheme_default(base_size=6)
+mytheme <- ttheme_default(base_size=10)
 
 a <-tableGrob(mod_order.bin[1:14,], rows = rownames(mod_order.bin)[1:14],theme = mytheme)
 b<-tableGrob(mod_order.bin[15:nrow(mod_order.bin),], rows = rownames(mod_order.bin)[15:nrow(mod_order.bin)],theme = mytheme)
-grid.arrange(a,b,ncol=2)
+grid.draw(a)
+grid.newpage()
+grid.draw(b)
+
+#grid.arrange(a,b,ncol=2)
 ```
 
 Je trace la représentation graphique des pvalue des 28 intéractions possibles
