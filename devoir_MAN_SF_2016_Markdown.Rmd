@@ -16,6 +16,8 @@ library(corrplot)
 library(gridExtra)
 library(ggplot2)
 library(car)
+library(dplyr)
+library(grid)
 
 rt <- read.csv2("data/presentationTPretinol.csv")
 ```
@@ -210,16 +212,86 @@ Faut il faire des tests?
 
 # Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
 
-faire une acp focalisée
 
-La variable à expliquer retplasma étant une variable Quantitative, je peux faire une régression linéaire. Et dans la mesure où j'introduis plusieurs variables explicatives, ce sera une régression linéaire multiple.
+## ACP focalisée
 
+Je peux commencer par regarder les intéraction enter retplasma  et les variables explicatives avec une acp focalisée:
 ```{r , echo=FALSE}
 var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
 my_formula<-as.formula(paste("retplasma~",paste(var[-1],collapse='+'))) #pour éviter de tout réécrire à la main...
-mod <- lm(my_formula,rt)
+fpca(formula = my_formula,data=rt)
+```
+La seule variable qui semble significativement liée à retplasma est âge. Et en effet c'est un couple qui ressortait dans la matrice de corrélation avec un r=0.212 significativement différent de 0.
 
-mod_int <- lm(retplasma ~ age + sexe * bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt)
+## régression linéaire multiple
+
+La variable à expliquer retplasma étant une variable Quantitative, je peux faire une régression linéaire. Et dans la mesure où j'introduis plusieurs variables explicatives, ce sera une régression linéaire multiple.
+
+```{r,echo=FALSE }
+mod <- lm(my_formula,rt)
+#mod <- lm(retplasma ~ age + sexe * bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt)
+
+summary(mod)
 ```
 
+## Recherche d'intéractions entre les variables explicatives:
+```{r, echo=FALSE}
+mod_inter <- data.frame(add1(mod,~.^2,test="Chisq"))
+isort <- order (mod_inter$Pr..Chi.)
+mod_order <- mod_inter[isort,]
+mod_order$Pr..Chi. <- round(mod_order$Pr..Chi.,4) 
+mod_order$signif <- ifelse(mod_order$Pr..Chi.<= 0.05,"*","")
+
+mytheme <- ttheme_default(base_size=6)
+
+a <-tableGrob(mod_order[1:14,], rows = rownames(mod_order)[1:14],theme = mytheme)
+b <- tableGrob(mod_order[15:nrow(mod_order),], rows = rownames(mod_order)[15:nrow(mod_order)],theme = mytheme)
+grid.arrange(a,b,nrow=2)
+```
+
+Je trace la représentation graphique des pvalue des 28 intéractions possibles
+```{r, echo=FALSE}
+x <- 1-na.omit(mod_order$Pr..Chi.)
+y <- length(x):1
+plot(x,y,xlab="1-p",ylab="Np")
+line<- lm(1:length(x) ~ -1 + x[length(x):1])
+abline(line)
+```
+
+
 # Q4/Transformez la variable "rétinol plasmatique" en une variable binaire (en la coupant en deux au niveau de la médiane). Refaites les calculs précédents en ayant recours cette fois à une régression logistique.
+
+## régression logistique : construction du modèle
+La variable à expliquer est binaire, il faut donc faire une régression logistique
+```{r, echo=FALSE}
+rt$retplasma.bin <- ifelse(rt$retplasma < median(rt$retplasma,na.rm=TRUE), 0,1)
+mod.bin <- glm(retplasma.bin ~ age + sexe + bmi + tabac + vitamine + cholesterol + alcool + retdiet, data = rt, family = "binomial")
+
+
+summary(mod.bin)
+#drop1(mod.bin) utile?
+```
+
+## Recherche d'intéractions entre les variables explicatives:
+```{r, echo=FALSE}
+mod_inter.bin <- data.frame(add1(mod.bin,~.^2,test="Chisq"))
+isort.bin <- order (mod_inter.bin$Pr..Chi.)
+mod_order.bin <- mod_inter.bin[isort.bin,]
+mod_order.bin$Pr..Chi. <- round(mod_order.bin$Pr..Chi.,4) 
+mod_order.bin$signif <- ifelse(mod_order.bin$Pr..Chi.<= 0.05,"*","")
+
+mytheme <- ttheme_default(base_size=6)
+
+a <-tableGrob(mod_order.bin[1:14,], rows = rownames(mod_order.bin)[1:14],theme = mytheme)
+b<-tableGrob(mod_order.bin[15:nrow(mod_order.bin),], rows = rownames(mod_order.bin)[15:nrow(mod_order.bin)],theme = mytheme)
+grid.arrange(a,b,ncol=2)
+```
+
+Je trace la représentation graphique des pvalue des 28 intéractions possibles
+```{r, echo=FALSE}
+x <- 1-na.omit(mod_order.bin$Pr..Chi.)
+y <- length(x):1
+plot(x,y,xlab="1-p",ylab="Np")
+line<- lm(1:length(x) ~ -1 + x[length(x):1])
+abline(line)
+```
