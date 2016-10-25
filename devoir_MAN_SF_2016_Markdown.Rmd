@@ -9,41 +9,56 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Q1/Dans un premier temps décrivez vos variables.
-```{r}
+# Q1/Dans un premier temps décrivez vos variables.
+```{r , echo=FALSE,warning=FALSE}
 library(psy)
 library(corrplot)
+library(gridExtra)
+library(ggplot2)
+library(car)
 
 rt <- read.csv2("data/presentationTPretinol.csv")
 ```
 
-#Nombre de variables
+## Nombre de variables
 ```{r cars}
 dim(rt)
 ```
 J'ai 14 variables.
 
-#Type de variables
-```{r}
+## Type de variables
+```{r, echo=FALSE, cache=TRUE}
 summary(rt)
+rt$sexe <- Recode(rt$sexe,"1=0;2=1")
+rt$vitamine <- Recode(rt$vitamine,"1=3;3=1")
 ```
 Les variables sont reconnues comme quantitatives 
-mais en regardant plus attentivement les min et max on peut voir que sexe a un minimum de 1 et un maximum de 2 c'est donc une variables qualitative binaire.
+mais en regardant plus attentivement les min et max on peut voir que sexe a un minimum de 1 et un maximum de 2 c'est donc une variables qualitative binaire. Je la recode en 0(homme)/1(femme) pour une interprétation plus facile par la suite.
 Les autres variables sont quantitatives:
 soit continues : age, bmi, calories, graisses, fibres, alcool, cholestérol, betadiet,retdiet,betaplasma,retplasma
-soit discètes : tabac, vitamine
+soit discètes : tabac, vitamine (Je recode vitamine : 1=non, 2=oui pas souvent, 3= oui souvent)
 NB: tabac est limite entre qualitatif à 3 classes et quantitatif...
 
-#Données manquantes
-summary ne montre pas de données manquantes mais je préfère m'en assurer en demandant spécifiquement de sortir les NA:
-```{r}
-for (i in names(rt)){
-  res <-  c(i,sum(is.na(rt[ , i])))
-  print(res)
-}
+```{r , echo=FALSE}
+quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholestérol","betadiet","retdiet","betaplasma","retplasma")
+quantdis <- c("tabac","vitamine","", "", "", "", "", "", "", "", "")
+binaire <- c("sexe","", "", "", "", "", "", "", "", "","")
+grid.table(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
+
 ```
 
-#Données abberrantes
+## Données manquantes
+summary ne montre pas de données manquantes mais je préfère m'en assurer en demandant spécifiquement de sortir les NA:
+```{r, echo=FALSE }
+  for (i in names(rt)){
+    res <-  c(i,sum(is.na(rt[ , i])))
+    .df<-data.frame(variables=res[1],"NA"=res[2])
+    if(which(names(rt)==i)==1).res <- .df else .res <- rbind(.res,.df) 
+  }
+print(.res)
+```
+
+# Données abberrantes
 
 Observer ses variables sert également à dépister les "bizarreries".
 Par exemple, j'ai un doute concernant le max d'alcool, je vais donc regarder plus attentivement la variable, par exemple avec une table
@@ -53,26 +68,59 @@ table(rt$alcool)
 ```
 en effet, je passe de 35 à 203 verres...203/7=29 verres par jour, il y a probablement un erreur de codage
 
-#Distribution des variables
-```{r ,echo=FALSE}
+## Distribution des variables
+```{r ,message=FALSE, echo=FALSE}
 
-par(mfrow=c(2,3))
+#par(mfrow=c(2,3))
 non_cont<- c("sexe","tabac","vitamine")
 names_rt<-names(rt)[! names(rt) %in% non_cont]
-for (i in names_rt){
-print(hist(rt[,i],breaks = 20, main=i)) #je rajoute des breaks pour avoir un histogramme plus précis
-} 
-dev.off()
+qage <- qplot(rt$age,binwidth=1)
+qbmi <- qplot(rt$bmi,binwidth=1)
+qcalories <- qplot(rt$calories,binwidth=50)
+qgraisses <- qplot(rt$graisses,binwidth=2)
+qfibres <- qplot(rt$fibres,binwidth=0.5)
+qalcool <- qplot(rt$alcool,binwidth=3)
+qcholesterol <- qplot(rt$cholesterol,binwidth=50)
+qbetadiet <- qplot(rt$betadiet,binwidth=40)
+qretdiet <- qplot(rt$retdiet,binwidth=40)
+qbetaplasma <- qplot(rt$betaplasma,binwidth=30)
+qretplasma <- qplot(rt$retplasma,binwidth=30)
+
+# for (i in names_rt){
+#   assign(paste0("q",i),qplot(rt[,i],
+#               geom="histogram",
+#               binwidth = 0.5,
+#               #main=i,
+#               xlab=i))
+#   #print(hist(rt[,i],breaks = 20, main=i)) 
+# } 
+# grid.arrange(get(paste0("q",names_rt)))
+
+# noquote(paste(noquote(paste0("q",names_rt)),collapse=","))
+# grid.arrange(qage,qbmi,qcalories,qgraisses,qfibres,qalcool,qcholesterol,qbetadiet,qretdiet,qbetaplasma,qretplasma)
+
+#dev.off() #produce a null device message
+
+pl <- lapply(names_rt, function(.x) qplot(rt[,.x],xlab=NULL, main=paste("plot", .x)))
+ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
+print(ml)
+```
+```{r, echo=FALSE}
 
 varnorm<- c("retplasma", "bmi", "cholesterol", "retdiet", "graisses", "betadiet", "betaplasma", "calories", "fibres")
-varnnorm<-c("age", "sexe", "tabac", "vitamine", "alcool")
+#rep("",length(varnorm)-length(varnnorm))
+varnnorm<-c("age", "sexe", "tabac", "vitamine", "alcool","", "", "", "")
+
+grid.table(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
+
 ```
+
 -bmi, graisses, cholestérol, betadiet, retdiet et betaplasme on des distribution à peu près normales mais asymétriques.
 -calories, fibres, ret plasma ont de distributions d'allure normales
 -age a une distribution irrégulière avec 2 cloches à 40 et 75 ans.
 -alcool a une distribution très asymétrique qui ne semble pas normale
 
-## Q2/Etudiez les relations existant entre toutes les paires possibles de variables. 
+# Q2/Etudiez les relations existant entre toutes les paires possibles de variables. 
 NB : ce ne sont que les 9 variables qui sont concernées
 ```{r,echo=FALSE}
 var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
@@ -160,10 +208,13 @@ retdiet-cholestérol
 
 Faut il faire des tests?
 
-## Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
+# Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
 
 faire une acp focalisée
-```{r}
+
+La variable à expliquer retplasma étant une variable Quantitative, je peux faire une régression linéaire. Et dans la mesure où j'introduis plusieurs variables explicatives, ce sera une régression linéaire multiple.
+
+```{r , echo=FALSE}
 var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
 my_formula<-as.formula(paste("retplasma~",paste(var[-1],collapse='+'))) #pour éviter de tout réécrire à la main...
 mod <- lm(my_formula,rt)
@@ -171,12 +222,4 @@ mod <- lm(my_formula,rt)
 mod_int <- lm(retplasma ~ age + sexe * bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Q4/Transformez la variable "rétinol plasmatique" en une variable binaire (en la coupant en deux au niveau de la médiane). Refaites les calculs précédents en ayant recours cette fois à une régression logistique.
