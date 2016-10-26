@@ -2,7 +2,7 @@
 title: "devoir MAN 2016"
 author: "sarah FELDMAN"
 date: "21 octobre 2016"
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -18,7 +18,7 @@ library(ggplot2)
 library(car)
 library(dplyr)
 library(grid)
-
+library(knitr)
 
 rt <- read.csv2("data/presentationTPretinol.csv")
 ```
@@ -247,9 +247,11 @@ mytheme <- ttheme_default(base_size=10)
 
 a <-tableGrob(mod_order[1:14,], rows = rownames(mod_order)[1:14],theme = mytheme)
 b <- tableGrob(mod_order[15:nrow(mod_order),], rows = rownames(mod_order)[15:nrow(mod_order)],theme = mytheme)
-grid.draw(a)
-grid.newpage()
-grid.draw(b)
+.df<-mod_order 
+kable(.df)
+# grid.draw(a)
+# grid.newpage()
+# grid.draw(b)
 #grid.arrange(a,b,nrow=2)
 ```
 
@@ -288,9 +290,12 @@ mytheme <- ttheme_default(base_size=10)
 
 a <-tableGrob(mod_order.bin[1:14,], rows = rownames(mod_order.bin)[1:14],theme = mytheme)
 b<-tableGrob(mod_order.bin[15:nrow(mod_order.bin),], rows = rownames(mod_order.bin)[15:nrow(mod_order.bin)],theme = mytheme)
-grid.draw(a)
-grid.newpage()
-grid.draw(b)
+
+.df.bin <- mod_order.bin
+kable(.df.bin)
+# grid.draw(a)
+# grid.newpage()
+# grid.draw(b)
 
 #grid.arrange(a,b,ncol=2)
 ```
