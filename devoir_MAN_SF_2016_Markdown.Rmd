@@ -2,7 +2,7 @@
 title: "devoir MAN 2016"
 author: "sarah FELDMAN"
 date: "21 octobre 2016"
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
