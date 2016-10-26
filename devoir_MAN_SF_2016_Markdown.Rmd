@@ -18,7 +18,7 @@ library(ggplot2)
 library(car)
 library(dplyr)
 library(grid)
-
+library(knitr)
 
 rt <- read.csv2("data/presentationTPretinol.csv")
 ```
@@ -46,8 +46,8 @@ NB: tabac est limite entre qualitatif à 3 classes et quantitatif...
 quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholestérol","betadiet","retdiet","betaplasma","retplasma")
 quantdis <- c("tabac","vitamine","", "", "", "", "", "", "", "", "")
 binaire <- c("sexe","", "", "", "", "", "", "", "", "","")
-grid.table(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
-
+#grid.table(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
+kable(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
 ```
 
 ## Données manquantes
@@ -114,7 +114,8 @@ varnorm<- c("retplasma", "bmi", "cholesterol", "retdiet", "graisses", "betadiet"
 #rep("",length(varnorm)-length(varnnorm))
 varnnorm<-c("age", "sexe", "tabac", "vitamine", "alcool","", "", "", "")
 
-grid.table(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
+#grid.table(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
+kable(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
 
 ```
 
@@ -247,9 +248,11 @@ mytheme <- ttheme_default(base_size=10)
 
 a <-tableGrob(mod_order[1:14,], rows = rownames(mod_order)[1:14],theme = mytheme)
 b <- tableGrob(mod_order[15:nrow(mod_order),], rows = rownames(mod_order)[15:nrow(mod_order)],theme = mytheme)
-grid.draw(a)
-grid.newpage()
-grid.draw(b)
+.df<-mod_order 
+kable(.df)
+# grid.draw(a)
+# grid.newpage()
+# grid.draw(b)
 #grid.arrange(a,b,nrow=2)
 ```
 
@@ -288,9 +291,12 @@ mytheme <- ttheme_default(base_size=10)
 
 a <-tableGrob(mod_order.bin[1:14,], rows = rownames(mod_order.bin)[1:14],theme = mytheme)
 b<-tableGrob(mod_order.bin[15:nrow(mod_order.bin),], rows = rownames(mod_order.bin)[15:nrow(mod_order.bin)],theme = mytheme)
-grid.draw(a)
-grid.newpage()
-grid.draw(b)
+
+.df.bin <- mod_order.bin
+kable(.df.bin)
+# grid.draw(a)
+# grid.newpage()
+# grid.draw(b)
 
 #grid.arrange(a,b,ncol=2)
 ```
