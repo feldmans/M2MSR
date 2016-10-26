@@ -2,7 +2,7 @@
 title: "devoir MAN 2016"
 author: "sarah FELDMAN"
 date: "21 octobre 2016"
-output: html_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Q1/Dans un premier temps décrivez vos variables.
-```{r , echo=FALSE,warning=FALSE}
+```{r , echo=FALSE,warning=FALSE,message=FALSE}
 library(psy)
 library(corrplot)
 library(gridExtra)
@@ -135,9 +135,10 @@ Je peux faire une matrice de corrélation.
 Aucune condition n'est nécessaire pour faire des coefficients de corrélation. C'est pour les tester que nous avons besoin de vérifier les confidions de validité
 ```{r, echo = FALSE}
 mat <- round(cor(rt[,var]),3)
-print(mat)
-
+#print(mat)
+kable(mat)
 ```
+
 scatter plot?
 Il faut ensuite interprêter la matrice. Pour cela je peux faire des schéma
 
@@ -148,6 +149,7 @@ corrplot(cor(rt[,var]),method="circle")
 ```{r, echo=FALSE}
 mdspca(rt[,var])
 ```
+
 bmi, tabac et vitamine sont très proches du centre du cercle donc non interprétables
 Par contre on peut voir que les paires retdiet-cholestérol, retplasma-age sont fortement associés (corrélation positive), et ces deux groupes de variables sont indépendants l'un de l'autre car forme un angle droit avec le centre.
 sexe est également indépendant de retdiet et cholestérol.
