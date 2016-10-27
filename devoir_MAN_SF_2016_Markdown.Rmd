@@ -30,27 +30,30 @@ dim(rt)
 J'ai 14 variables.
 
 ## Type de variables
+#Attention transformer summary et le sortir après transformation en facteur : nb de données, nb de NA, MinMax, Moy,Med, Q1,Q3
 ```{r, echo=FALSE, cache=TRUE}
 summary(rt)
-rt$sexe <- Recode(rt$sexe,"1=0;2=1")
-rt$vitamine <- Recode(rt$vitamine,"1=3;3=1")
+rt$sexe.bin <- factor(Recode(rt$sexe,"1=0;2=1"))
+rt$vitamine.f <- factor(rt$vitamine)
+rt$tabac.f <- factor (rt$tabac)
 ```
-Les variables sont reconnues comme quantitatives 
-mais en regardant plus attentivement les min et max on peut voir que sexe a un minimum de 1 et un maximum de 2 c'est donc une variables qualitative binaire. Je la recode en 0(homme)/1(femme) pour une interprétation plus facile par la suite.
-Les autres variables sont quantitatives:
-soit continues : age, bmi, calories, graisses, fibres, alcool, cholestérol, betadiet,retdiet,betaplasma,retplasma
-soit discètes : tabac, vitamine (Je recode vitamine : 1=non, 2=oui pas souvent, 3= oui souvent)
-NB: tabac est limite entre qualitatif à 3 classes et quantitatif...
+Les variables sont toutes reconnues comme quantitatives 
+mais en regardant plus attentivement les min et max on peut voir que certaines variables ne sont pas quantitatives:
+  + sexe a un minimum de 1 et un maximum de 2 c'est donc une variables qualitative binaire. Je la    recode en 0(homme)/1(femme) pour une interprétation plus facile par la suite et je la transforme en facteur.
+  + Les variables tabac et vitamine sont des variables qualitatives ordinales, il y a bien un ordre dans les classes mais je ne peux pas dire si l'espace entre 2 classes est le même. Pour tabac par exemple : ne pas fumer versus fumer anciennement aura-t-elle la même différence d'effet que fumer anciennement versus fumer actuellement? Je préfère donc les coder comme des variables qualitatives en attendant d'en savoir plus. Pour cela je les transforme simplement en facteur.
+
+Les autres variables sont quantitatives continues:
+age, bmi, calories, graisses, fibres, alcool, cholestérol, betadiet,retdiet,betaplasma,retplasma
 
 ```{r , echo=FALSE}
 quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholestérol","betadiet","retdiet","betaplasma","retplasma")
-quantdis <- c("tabac","vitamine","", "", "", "", "", "", "", "", "")
+qual.ord <- c("tabac","vitamine","", "", "", "", "", "", "", "", "")
 binaire <- c("sexe","", "", "", "", "", "", "", "", "","")
 #grid.table(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
-kable(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
+kable(cbind(variables.quantitatives.continues=quantcont,variables.qualitatives.orinales=qual.ord,variable.binaire=binaire))
 ```
 
-## Données manquantes
+## Données manquantes : Pas indispensable
 summary ne montre pas de données manquantes mais je préfère m'en assurer en demandant spécifiquement de sortir les NA:
 ```{r, echo=FALSE }
   for (i in names(rt)){
@@ -70,6 +73,8 @@ table(rt$alcool)
 
 ```
 en effet, je passe de 35 à 203 verres...203/7=29 verres par jour, il y a probablement un erreur de codage
+
+#Que faire du 203 d'alcool?
 
 ## Distribution des variables
 ```{r ,message=FALSE, echo=FALSE}
@@ -124,8 +129,12 @@ kable(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
 -age a une distribution irrégulière avec 2 cloches à 40 et 75 ans.
 -alcool a une distribution très asymétrique qui ne semble pas normale
 
+# Exemple d'autres façons de représenter des variables :
+### barplot pour tabac
+### boxplot pour âge
+
 # Q2/Etudiez les relations existant entre toutes les paires possibles de variables. 
-NB : ce ne sont que les 9 variables qui sont concernées
+NB : ce ne sont que les 9 variables de la régression demandé en question 3 qui sont concernées
 ```{r,echo=FALSE}
 var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
 #var %in% names(rt)#pour voir quelle variable j'ai mal recopié
@@ -181,7 +190,7 @@ print(couples)
 ```
 
 Est-ce pertinent de faire de tests de corrélation pour chaque variable?
-mat_test <-round(cor.test(rt[,var]),3) #ne marche pas
+
 
 Attention aux conditions de validité: 
 une des 2 variables du couple testé doit être normale
