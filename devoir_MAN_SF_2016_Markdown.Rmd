@@ -221,7 +221,7 @@ age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe,retdiet-cholestérol
 Il n'y a qu'un couple qui ressort pour r>=0.4 :
 retdiet-cholestérol
 
-Faut il faire des tests?
+
 
 # Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
 
@@ -242,9 +242,23 @@ La variable à expliquer retplasma étant une variable Quantitative, je peux fai
 
 ```{r,echo=FALSE }
 mod <- lm(my_formula,rt)
-#mod <- lm(retplasma ~ age + sexe * bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt)
+#mod <- lm(retplasma ~ age + sexe * bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt) #idem
 
+```
+### Vérification des conditions de validité:
+Il y a 3 conditions de validité aux modèles :
+  + la normalité de bruit
+  + la variance du bruit ne doit dépendre ni de la variable à expliquer ni de la variable explicative
+  + le bruit doit être du vrai bruit
+En pratique on ne teste que la première des conditions:
+```{r , echo=FALSE}
+hist(resid(mod))
+```
+La distribution des résidus a une allure normale, mon modèle est donc valide
+
+```{r , echo=FALSE}
 summary(mod)
+drop1(mod) 
 ```
 
 ## Recherche d'intéractions entre les variables explicatives:
@@ -284,10 +298,24 @@ La variable à expliquer est binaire, il faut donc faire une régression logisti
 ```{r, echo=FALSE}
 rt$retplasma.bin <- ifelse(rt$retplasma < median(rt$retplasma,na.rm=TRUE), 0,1)
 mod.bin <- glm(retplasma.bin ~ age + sexe + bmi + tabac + vitamine + cholesterol + alcool + retdiet, data = rt, family = "binomial")
+```
+### Vérification des conditions de validité
+pour que le modèle soit valide, il faut au moins 5 à 10 évènements par variable explicative.
+J'ai 6 variables explicatives comptant comme une variable, et 2 variables comptant comme n(classe) - 1 variables soit 2 pour vitamines et 2 pour tabac (sexe est binaire et ne compte donc que pour une variable).
+J'ai donc un total de 10 variables.
+10*5=50
+10*10=100
+# ? A vérifier dans le bouquin
+retplasma : c=157 sujets n'ont pas la variable, 158 l'ont. Donc 158 sujets ont des variables explicatives
+100 est inférieur à 158 donc le modèle est valable! 
+```{r , echo=FALSE}
 
 
+```
+
+```{r , echo=FALSE}
 summary(mod.bin)
-#drop1(mod.bin) utile?
+drop1(mod.bin) 
 ```
 
 ## Recherche d'intéractions entre les variables explicatives:
