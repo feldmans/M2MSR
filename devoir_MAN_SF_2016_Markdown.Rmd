@@ -45,6 +45,7 @@ mais en regardant plus attentivement les min et max on peut voir que certaines v
 Les autres variables sont quantitatives continues:
 age, bmi, calories, graisses, fibres, alcool, cholestérol, betadiet,retdiet,betaplasma,retplasma
 
+
 ```{r , echo=FALSE}
 quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholestérol","betadiet","retdiet","betaplasma","retplasma")
 qual.ord <- c("tabac","vitamine","", "", "", "", "", "", "", "", "")
@@ -67,14 +68,24 @@ print(.res)
 # Données abberrantes
 
 Observer ses variables sert également à dépister les "bizarreries".
-Par exemple, j'ai un doute concernant le max d'alcool, je vais donc regarder plus attentivement la variable, par exemple avec une table
-```{r}
+Par exemple, j'ai un doute concernant le max d'alcool, je vais donc regarder plus attentivement la variable, par exemple avec une table. 
+```{r , echo = FALSE}
 table(rt$alcool)
+rt$alcool[rt$alcool>20]
+rt$alcool[rt$alcool==203] <- NA
 
 ```
-en effet, je passe de 35 à 203 verres...203/7=29 verres par jour, il y a probablement un erreur de codage
+Je passe de 35 à 203 verres par semaine...203/7=29 verres par jour, il y a probablement un erreur de codage. 
 
-#Que faire du 203 d'alcool?
+### Que faire du 203 d'alcool?
+La valeur extrême d'alcool influe beaucoup sur la symétrie de ma distribution. On peut le voir notamment en comparant la moyenne et la médiane : 3.3 de moyenne vs 0.3 de mediane. Je préfère donc la recoder en valeur manquante pour la suite du devoir.
+```{r , echo = FALSE})
+mean(rt$alcool)
+meadian(rt$alcool)
+rt$alcool[rt$alcool>20]
+rt$alcool[rt$alcool==203] <- NA
+rt$alcool[rt$alcool>20]
+```
 
 ## Distribution des variables
 ```{r ,message=FALSE, echo=FALSE}
@@ -128,6 +139,13 @@ kable(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
 -calories, fibres, ret plasma ont de distributions d'allure normales
 -age a une distribution irrégulière avec 2 cloches à 40 et 75 ans.
 -alcool a une distribution très asymétrique qui ne semble pas normale
+
+Voici un résumé des différentes variables:
+  + pour les variables quantitatives:
+```{r , echo=FALSE}
+kable(data.frame (var=names(rt[quantcont]),n= apply(rt[quantcont],2,function(x)sum(!is.na(x))),missing=apply(rt[quantcont],2,function(x)sum(is.na(x))),moyenne =round(apply(rt[quantcont],2,mean,na.rm=T),1),median=round(apply(rt[quantcont],2,median,na.rm=T),1),q1= round(apply(rt[quantcont],2,quantile,na.rm=T),1)[2,],q3= round(apply(rt[quantcont],2,quantile,na.rm=T),1)[4,],rmin=round(apply(rt[quantcont],2,min,na.rm=T),1),max=round(apply(rt[quantcont],2,max,na.rm=T),1)) )
+```
+
 
 # Exemple d'autres façons de représenter des variables :
 ### barplot pour tabac
