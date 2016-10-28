@@ -2,7 +2,7 @@
 title: "devoir MAN 2016"
 author: "sarah FELDMAN"
 date: "21 octobre 2016"
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -30,9 +30,9 @@ dim(rt)
 J'ai 14 variables.
 
 ## Type de variables
-#Attention transformer summary et le sortir après transformation en facteur : nb de données, nb de NA, MinMax, Moy,Med, Q1,Q3
+
 ```{r, echo=FALSE, cache=TRUE}
-summary(rt)
+#summary(rt)
 rt$sexe.bin <- factor(Recode(rt$sexe,"1=0;2=1"))
 rt$vitamine.f <- factor(rt$vitamine)
 rt$tabac.f <- factor (rt$tabac)
@@ -47,22 +47,26 @@ age, bmi, calories, graisses, fibres, alcool, cholestérol, betadiet,retdiet,bet
 
 
 ```{r , echo=FALSE}
-quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholestérol","betadiet","retdiet","betaplasma","retplasma")
-qual.ord <- c("tabac","vitamine","", "", "", "", "", "", "", "", "")
-binaire <- c("sexe","", "", "", "", "", "", "", "", "","")
+# quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholestérol","betadiet","retdiet","betaplasma","retplasma")
+#rt[,quantcont] ne marche pas : je recherche si je n'ai pas mal écrit une des variables :
+# quantcont[!quantcont %in% names(rt)] : cholestérol au lieu de cholesterol
+quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholesterol","betadiet","retdiet","betaplasma","retplasma")
+qual.ord <- c("tabac","vitamine")
+binaire <- c("sexe")
 #grid.table(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
-kable(cbind(variables.quantitatives.continues=quantcont,variables.qualitatives.orinales=qual.ord,variable.binaire=binaire))
+kable(cbind(variables.quantitatives.continues=quantcont,variables.qualitatives.orinales=c(qual.ord, rep("",9)),variable.binaire=c(binaire,rep("",10)))) #je dois rajouter des "" à la fin des vecteurs trop courts pour pouvoir créer un tableau
 ```
 
 ## Données manquantes : Pas indispensable
 summary ne montre pas de données manquantes mais je préfère m'en assurer en demandant spécifiquement de sortir les NA:
 ```{r, echo=FALSE }
-  for (i in names(rt)){
-    res <-  c(i,sum(is.na(rt[ , i])))
-    .df<-data.frame(variables=res[1],"NA"=res[2])
-    if(which(names(rt)==i)==1).res <- .df else .res <- rbind(.res,.df) 
-  }
-print(.res)
+#   for (i in names(rt)){
+#     res <-  c(i,sum(is.na(rt[ , i])))
+#     .df<-data.frame(variables=res[1],"NA"=res[2])
+#     if(which(names(rt)==i)==1).res <- .df else .res <- rbind(.res,.df) 
+#   }
+# apply(rt[quantcont],2,function(x)sum(is.na(x)))
+# print(.res)
 ```
 
 # Données abberrantes
@@ -70,6 +74,7 @@ print(.res)
 Observer ses variables sert également à dépister les "bizarreries".
 Par exemple, j'ai un doute concernant le max d'alcool, je vais donc regarder plus attentivement la variable, par exemple avec une table. 
 ```{r , echo = FALSE}
+
 table(rt$alcool)
 rt$alcool[rt$alcool>20]
 rt$alcool[rt$alcool==203] <- NA
@@ -79,9 +84,10 @@ Je passe de 35 à 203 verres par semaine...203/7=29 verres par jour, il y a prob
 
 ### Que faire du 203 d'alcool?
 La valeur extrême d'alcool influe beaucoup sur la symétrie de ma distribution. On peut le voir notamment en comparant la moyenne et la médiane : 3.3 de moyenne vs 0.3 de mediane. Je préfère donc la recoder en valeur manquante pour la suite du devoir.
-```{r , echo = FALSE})
+
+```{r , echo = FALSE}
 mean(rt$alcool)
-meadian(rt$alcool)
+median(rt$alcool)
 rt$alcool[rt$alcool>20]
 rt$alcool[rt$alcool==203] <- NA
 rt$alcool[rt$alcool>20]
@@ -91,8 +97,8 @@ rt$alcool[rt$alcool>20]
 ```{r ,message=FALSE, echo=FALSE}
 
 #par(mfrow=c(2,3))
-non_cont<- c("sexe","tabac","vitamine")
-names_rt<-names(rt)[! names(rt) %in% non_cont]
+non_cont<- c("sexe.bin","tabac.f","vitamine.f")
+names_rt <- names(rt)[!names(rt) %in% sapply(c("sexe","tabac","vit"),grep,names(rt),value=T)]
 qage <- qplot(rt$age,binwidth=1)
 qbmi <- qplot(rt$bmi,binwidth=1)
 qcalories <- qplot(rt$calories,binwidth=50)
@@ -121,13 +127,14 @@ qretplasma <- qplot(rt$retplasma,binwidth=30)
 #dev.off() #produce a null device message
 
 pl <- lapply(names_rt, function(.x) qplot(rt[,.x],xlab=NULL, main=paste("plot", .x)))
+#pl <- lapply(names_rt, function(x)get(paste0("q",x)))
 ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
 print(ml)
 ```
+
 ```{r, echo=FALSE}
 
 varnorm<- c("retplasma", "bmi", "cholesterol", "retdiet", "graisses", "betadiet", "betaplasma", "calories", "fibres")
-#rep("",length(varnorm)-length(varnnorm))
 varnnorm<-c("age", "sexe", "tabac", "vitamine", "alcool","", "", "", "")
 
 #grid.table(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
@@ -143,7 +150,56 @@ kable(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
 Voici un résumé des différentes variables:
   + pour les variables quantitatives:
 ```{r , echo=FALSE}
-kable(data.frame (var=names(rt[quantcont]),n= apply(rt[quantcont],2,function(x)sum(!is.na(x))),missing=apply(rt[quantcont],2,function(x)sum(is.na(x))),moyenne =round(apply(rt[quantcont],2,mean,na.rm=T),1),median=round(apply(rt[quantcont],2,median,na.rm=T),1),q1= round(apply(rt[quantcont],2,quantile,na.rm=T),1)[2,],q3= round(apply(rt[quantcont],2,quantile,na.rm=T),1)[4,],rmin=round(apply(rt[quantcont],2,min,na.rm=T),1),max=round(apply(rt[quantcont],2,max,na.rm=T),1)) )
+kable(data.frame (var=names(rt[quantcont]),n=apply(rt[quantcont],2,function(x)sum(!is.na(x))),
+missing=apply(rt[quantcont],2,function(x)sum(is.na(x))),
+moyenne =round(apply(rt[quantcont],2,mean,na.rm=T),1),
+median=round(apply(rt[quantcont],2,median,na.rm=T),1),
+q1= round(apply(rt[quantcont],2,quantile,na.rm=T),1)[2,],
+q3= round(apply(rt[quantcont],2,quantile,na.rm=T),1)[4,],
+rmin=round(apply(rt[quantcont],2,min,na.rm=T),1),
+max=round(apply(rt[quantcont],2,max,na.rm=T),1),
+distribution.normale=sapply(names(rt[quantcont]),function(x)ifelse(x %in% varnorm, "oui",ifelse(x %in% varnnorm, "non",NA)))))
+```
+  + pour les variables qualitatives:
+  
+```{r, echo=FALSE}
+t1 <- cbind(table(rt$sexe,useNA="a"),round(prop.table(table(rt$sexe,useNA="a"))*100,0))
+tot1 <- cbind(sum(table(rt$sexe)),sum(prop.table(table(rt$sexe,useNA="a"))*100))
+t1 <- rbind(t1,tot1)
+t1 <- t1[c(1,2,4,3),]
+rownames(t1) <- c(1,2,"N", "missing")
+colnames(t1) <- c("Fréquence","Pourcentage")
+t1 <- data.frame(t1) 
+t1$sexe <- rownames(t1) 
+rownames(t1) <- NULL 
+t1 <- t1[,c(3,1,2)]
+#t1 <- kable(t1,rownames="sexe")
+
+t2 <- cbind(table(rt$vitamine,useNA="a"),round(prop.table(table(rt$vitamine,useNA="a"))*100,0))
+tot2 <- cbind(sum(table(rt$vitamine)),sum(prop.table(table(rt$vitamine,useNA="a"))*100))
+t2 <- rbind(t2,tot2)
+t2 <- t2[c(1,2,3,5,4),]
+rownames(t2) <- c(1,2,3,"N", "missing")
+colnames(t2) <- c("Fréquence","Pourcentage")
+t2 <- data.frame(t2)
+t2$vitamine <- rownames(t2) 
+rownames(t2) <- NULL 
+t2 <- t2[,c(3,1,2)]
+#t2 <- kable(t2,rownames="vitamine")
+
+t3 <- cbind(table(rt$tabac,useNA="a"),round(prop.table(table(rt$tabac,useNA="a"))*100,0))
+tot3 <- cbind(sum(table(rt$tabac)),sum(prop.table(table(rt$tabac,useNA="a"))*100))
+t3 <- rbind(t3,tot3)
+t3 <- t3[c(1,2,3,5,4),]
+rownames(t3) <- c(1,2,3,"N", "missing")
+colnames(t3) <- c("Fréquence","Pourcentage")
+t3 <- data.frame(t3)
+t3$tabac <- rownames(t3) 
+rownames(t3) <- NULL 
+t3 <- t3[,c(3,1,2)]
+#t3 <- kable(t3,rownames="tabac")
+
+grid.arrange(tableGrob(t2,rows=NULL),tableGrob(t3,rows=NULL),tableGrob(t1,rows=NULL),ncol=2)
 ```
 
 
