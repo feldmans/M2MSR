@@ -279,42 +279,82 @@ print(couplesb)
 Toutes les corrélations supérieures ou égales à 0.2 sont significatives. Il faut cependant prêter attention au fait que 2 couples ont des conditions de validité probablement non remplies : sexe_age et sexe-alcool car age et alcool n'ont pas une allure normale (et sexe est binaire donc ne peut pas être normale).
 
 ## étude des liens entre une variable qualitative à plusieurs classe et des variables quantitatives:
+
+### Graphiquement: je regarde la dispersion des variables quantitatives dans les différentes classes grâce à des boxplots
 ```{r}
-pl <- lapply (names_rt, function(.x) {
-  ggplot(rt, aes(x = tabac, y = get(.x))) +
-  geom_boxplot(fill = "grey80", colour = "blue") +
-  scale_x_discrete() + xlab("Tabac") + ylab(.x)
+sapply(c("tabac","vitamine"),function(.i){
+  pl <- lapply (var[! var %in% "sexe"], function(.x) {
+    ggplot(rt, aes(x = get(.i), y = get(.x))) +
+      geom_boxplot(fill = "grey80", colour = "blue") +
+      scale_x_discrete() + xlab(.i) + ylab(.x)
+  })
+  
+  ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
+  
+  print(ml)
+  
 })
 
-ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
-
-print(ml)
-
 ```
+### Comparaison de moyenne entre plusieurs groupes (plus de 2) : ANOVA
 
+#### Conditions de validité : 
+  + variance du même ordre de grandeur dans tous les sous groupes
+```{r}
+var_tab <- data.frame(round(sapply(var[! var %in% "sexe"], function(.x) by(rt[,.x],rt$tabac,sd,na.rm=T)),0))
+var_tab$tabac <- levels(rt$tabac)
+var_tab <- var_tab[,c(7,1:6)]
+rownames(var_tab) <- NULL
+
+var_vit <- data.frame(round(sapply(var[! var %in% "sexe"], function(.x) by(rt[,.x],rt$vitamine,sd,na.rm=T)),0))
+var_vit$vitamine <- levels (rt$vitamine)
+var_vit <- var_vit[,c(7,1:6)]
+rownames (var_vit) <- NULL
+
+grid.arrange(tableGrob(var_tab,rows=NULL),tableGrob(var_vit,rows=NULL),nrow=2)
+```
+C'est le cas partout sauf pour la variable alcool. Je préfère donc ne pas faire de test avec alcool
+  + ditribution normale : je fais l'approximation que toutes les variables suivent une loi normale, d'autant plus que l'anova est un test qui résiste bien à des ditribution qui s'éloignent un peu de la normale.
+  
+#### Je fais donc mon ANOVA entre ma variable qualitative et mes variables quantitative (alcool exclue)
+```{r}
+names.vit.an <- c("tabac","vitamine")
+tab.vit.an<-lapply(names.vit.an,function(.i){
+anov<- data.frame(t(sapply(var[! var %in% c("sexe","alcool")], function(.x){
+ res <- lm(get(.x) ~ get(.i), rt )
+ dp <- drop1(res, test="F")
+ pv <- round(dp$`Pr(>F)`[!is.na(dp$`Pr(>F)`)],3)
+ #names(pv)<-.i
+})))
+})
+tab.vit <- do.call(rbind,tab.vit.an)
+tab.vit$variable_qualitative <- names.vit.an
+tab.vit <- tab.vit[,c(6,1:5)]
+
+grid.arrange(tableGrob(tab.vit,rows=NULL))
+```
+interprétation :
+  + tabac est significativement associée à retplasma et age
+  + vitamine est significativement associée à age.
 
 
 # Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
 
 
-## ACP focalisée
+## Analyse en composante principale focalisée
 
-Je peux commencer par regarder les intéraction enter retplasma  et les variables explicatives avec une acp focalisée:
+Je peux commencer par regarder les intéraction enter retplasma  et les variables explicatives avec une acp focalisée. Je retire cependant vitamine et tabac car fpca se base sur une matrice de corrélation, il faut donc faire attention à l'interprêtation du schéma car les intéractions seront peutêtre modifiées en rajoutant vitamine et tabac:
 ```{r , echo=FALSE}
-var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
-my_formula<-as.formula(paste("retplasma~",paste(var[-1],collapse='+'))) #pour éviter de tout réécrire à la main...
-fpca(formula = my_formula,data=rt)
+fpca(retplasma ~ age + sexe + bmi + cholesterol + alcool + retdiet,data=rt)
 ```
-La seule variable qui semble significativement liée à retplasma est âge. Et en effet c'est un couple qui ressortait dans la matrice de corrélation avec un r=0.212 significativement différent de 0.
+2 variables semblent significativement liée à retplasma : age et sexe. En effet age-retplasma est un couple qui ressortait dans la matrice de corrélation avec un r=0.212 significativement différent de 0. sexe-retplasma ne ressortait pas car inférieur à 0.2, comme on peut le voir sur l'acp focalisée.
 
 ## régression linéaire multiple
 
-La variable à expliquer retplasma étant une variable Quantitative, je peux faire une régression linéaire. Et dans la mesure où j'introduis plusieurs variables explicatives, ce sera une régression linéaire multiple.
+La variable à expliquer retplasma étant une variable Quantitative, je peux faire une régression linéaire. Et dans la mesure où j'introduis plusieurs variables explicatives, ce sera une régression linéaire multiple. Vitamine et tabac feront parti du modèle, je me suis bien assurée auparavent de les coder en facteur afin qu'elles soit recodées automatiquement en (nclasses-1) variables binaires.
 
 ```{r,echo=FALSE }
-mod <- lm(my_formula,rt)
-#mod <- lm(retplasma ~ age + sexe * bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt) #idem
-
+mod <- lm(retplasma ~ age + sexe + bmi + tabac + vitamine + cholesterol + alcool + retdiet,rt) 
 ```
 ### Vérification des conditions de validité:
 Il y a 3 conditions de validité aux modèles :
@@ -325,16 +365,27 @@ En pratique on ne teste que la première des conditions:
 ```{r , echo=FALSE}
 hist(resid(mod))
 ```
-La distribution des résidus a une allure normale, mon modèle est donc valide
+La distribution des résidus a une allure normale, mon modèle est donc valide.
 
+###Interprêtation des coefficients beta du modèle
 ```{r , echo=FALSE}
 summary(mod)
-drop1(mod) 
 ```
+L'age et le sexe sont significativement associés à la concentration plasmatique en retinol. Quand l'âge du sujet augmente d'un an, la concentration augmente de 2.26 unités. J'avais recodé les femmes en 1 et homme en 0, donc les femmes ont une concentration plasmatique en rétinol plus faible que les hommes d'environ 100 unités. 
+Le coefficient de tabac2 est significativement différent de 0. ceux qui fumaient autrefois ont donc une concentration plasmatique en rétinol significativement plus élevée de58 par rapport à ceux qui n'ont jamais fumé. Par contre on ne retrouve pas cette augmentation chez ceux qui fument actuellement. Les autres estimateurs ne sont pas significatifs.
+
+
+Je peux regarder si les variables tabac et vitamine sont globalement associées à retplasma:
+```{r}
+drop1(mod,.~.,test="F") 
+```
+ni tabac ni vitamine n'est globablement associé à retplasma.
+
 
 ## Recherche d'intéractions entre les variables explicatives:
+
 ```{r, echo=FALSE}
-mod_inter <- data.frame(add1(mod,~.^2,test="Chisq"))
+mod_inter <- data.frame(add1(mod,~.^2,test="F"))
 isort <- order (mod_inter$Pr..Chi.)
 mod_order <- mod_inter[isort,]
 mod_order$Pr..Chi. <- round(mod_order$Pr..Chi.,4) 
@@ -351,8 +402,9 @@ kable(.df)
 # grid.draw(b)
 #grid.arrange(a,b,nrow=2)
 ```
+J'ai 9 intéractions significatives : vitamine-alcool, cholestérol-alcool, bmi-alcool, age-alcool,sexe-bmi,alcool-retdiet, tabac-alcool,sexe-alcool,sexe-tabac.
 
-Je trace la représentation graphique des pvalue des 28 intéractions possibles
+### Je trace la représentation graphique des pvalue des 28 intéractions possibles : 
 ```{r, echo=FALSE}
 x <- 1-na.omit(mod_order$Pr..Chi.)
 y <- length(x):1
@@ -360,6 +412,7 @@ plot(x,y,xlab="1-p",ylab="Np")
 line<- lm(1:length(x) ~ -1 + x[length(x):1])
 abline(line)
 ```
+J'ai bien 9 points au dessus de la ligne.
 
 
 # Q4/Transformez la variable "rétinol plasmatique" en une variable binaire (en la coupant en deux au niveau de la médiane). Refaites les calculs précédents en ayant recours cette fois à une régression logistique.
@@ -376,22 +429,35 @@ J'ai 6 variables explicatives comptant comme une variable, et 2 variables compta
 J'ai donc un total de 10 variables.
 10*5=50
 10*10=100
-# ? A vérifier dans le bouquin
+# ? interprétation à vérifier dans le bouquin
 retplasma : c=157 sujets n'ont pas la variable, 158 l'ont. Donc 158 sujets ont des variables explicatives
 100 est inférieur à 158 donc le modèle est valable! 
-```{r , echo=FALSE}
 
-
-```
-
+###Interprêtation des coefficients beta du modèle
 ```{r , echo=FALSE}
 summary(mod.bin)
-drop1(mod.bin) 
 ```
+Seul le coefficient beta de age est significativement différent de 0. 
+
+Je ne peux pas interpréter les coefficients tels quels, j'interprète uniquement l'exponentiel de ces coefficients qui sont égales aux Odds ratio.
+```{r}
+exp(coefficients(mod.bin)) #exponentiel du coefficient donne l'OR
+```
+retplasma.bin n'est pas rare(car j'ai pris la médiane pour le construire...) donc les OR ne peuvent pas être interprétés comme des risques relatifs.
+On voit cependant que le coefficient de l'âge a beau être significatif, le rapport des odds est très proche de 1 donc l'âge est significativement différent mais de très très peu...
+
+Je peux regarder si vitamine et tabac ont un effet global:
+```{r}
+a <- drop1(mod.bin,.~.,test="Chisq") #Attention : test= Chisq pour la régression logistique
+tab <- a$`Pr(>Chi)`[rownames(a)=="tabac"]
+vit <- a$`Pr(>Chi)`[rownames(a)=="vitamine"]
+cat("p-value pour tabac : ",round(tab,2),"\np-value pour vitamine : ",round(vit,2))
+```
+Non ils n'en ont pas.
 
 ## Recherche d'intéractions entre les variables explicatives:
 ```{r, echo=FALSE}
-mod_inter.bin <- data.frame(add1(mod.bin,~.^2,test="Chisq"))
+mod_inter.bin <- data.frame(add1(mod.bin,~.^2,test="Chisq")) 
 isort.bin <- order (mod_inter.bin$Pr..Chi.)
 mod_order.bin <- mod_inter.bin[isort.bin,]
 mod_order.bin$Pr..Chi. <- round(mod_order.bin$Pr..Chi.,4) 
@@ -404,11 +470,15 @@ b<-tableGrob(mod_order.bin[15:nrow(mod_order.bin),], rows = rownames(mod_order.b
 
 .df.bin <- mod_order.bin
 kable(.df.bin)
+
+#ne pas utiliser grid car coupe les tableaux ou les superpose...
 # grid.draw(a)
 # grid.newpage()
 # grid.draw(b)
 
 #grid.arrange(a,b,ncol=2)
+
+length(rownames(.df.bin)[-29]) #nombre d'intéraction (le 29e est none)
 ```
 
 Je trace la représentation graphique des pvalue des 28 intéractions possibles
@@ -419,3 +489,4 @@ plot(x,y,xlab="1-p",ylab="Np")
 line<- lm(1:length(x) ~ -1 + x[length(x):1])
 abline(line)
 ```
+J'ai 9 points au dessus de la ligne mais 5 points qui se détachent du groupe. L'interprétation n'est pas aisée.
