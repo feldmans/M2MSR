@@ -33,9 +33,9 @@ J'ai 14 variables.
 
 ```{r, echo=FALSE, cache=TRUE}
 #summary(rt)
-rt$sexe.bin <- factor(Recode(rt$sexe,"1=0;2=1"))
-rt$vitamine.f <- factor(rt$vitamine)
-rt$tabac.f <- factor (rt$tabac)
+rt$sexe <- factor(Recode(rt$sexe,"1=0;2=1"))
+rt$vitamine <- factor(rt$vitamine)
+rt$tabac <- factor (rt$tabac)
 ```
 Les variables sont toutes reconnues comme quantitatives 
 mais en regardant plus attentivement les min et max on peut voir que certaines variables ne sont pas quantitatives:
@@ -73,61 +73,41 @@ summary ne montre pas de données manquantes mais je préfère m'en assurer en d
 
 Observer ses variables sert également à dépister les "bizarreries".
 Par exemple, j'ai un doute concernant le max d'alcool, je vais donc regarder plus attentivement la variable, par exemple avec une table. 
-```{r , echo = FALSE}
-
+```{r , echo = FALSE,cache=TRUE}
 table(rt$alcool)
-rt$alcool[rt$alcool>20]
-rt$alcool[rt$alcool==203] <- NA
-
 ```
 Je passe de 35 à 203 verres par semaine...203/7=29 verres par jour, il y a probablement un erreur de codage. 
 
-### Que faire du 203 d'alcool?
-La valeur extrême d'alcool influe beaucoup sur la symétrie de ma distribution. On peut le voir notamment en comparant la moyenne et la médiane : 3.3 de moyenne vs 0.3 de mediane. Je préfère donc la recoder en valeur manquante pour la suite du devoir.
+La valeur extrême d'alcool influe beaucoup sur la symétrie de ma distribution. On peut le voir notamment en comparant la moyenne et la médiane : 3.3 de moyenne vs 0.3 de mediane. Cependant je ne sais pas si je peux la retirer sans conséquence, je préfère donc la garder pour la suite du devoir.
 
 ```{r , echo = FALSE}
 mean(rt$alcool)
 median(rt$alcool)
-rt$alcool[rt$alcool>20]
-rt$alcool[rt$alcool==203] <- NA
-rt$alcool[rt$alcool>20]
+
+#rt$alcool[rt$alcool==203] <- NA #j'utiliserais ce codage pour supprimer la valeur 203 de alcool
 ```
 
 ## Distribution des variables
 ```{r ,message=FALSE, echo=FALSE}
 
-#par(mfrow=c(2,3))
 non_cont<- c("sexe.bin","tabac.f","vitamine.f")
-names_rt <- names(rt)[!names(rt) %in% sapply(c("sexe","tabac","vit"),grep,names(rt),value=T)]
-qage <- qplot(rt$age,binwidth=1)
-qbmi <- qplot(rt$bmi,binwidth=1)
-qcalories <- qplot(rt$calories,binwidth=50)
-qgraisses <- qplot(rt$graisses,binwidth=2)
-qfibres <- qplot(rt$fibres,binwidth=0.5)
-qalcool <- qplot(rt$alcool,binwidth=3)
-qcholesterol <- qplot(rt$cholesterol,binwidth=50)
-qbetadiet <- qplot(rt$betadiet,binwidth=40)
-qretdiet <- qplot(rt$retdiet,binwidth=40)
-qbetaplasma <- qplot(rt$betaplasma,binwidth=30)
-qretplasma <- qplot(rt$retplasma,binwidth=30)
+names_rt <- names(rt)[!names(rt) %in% sapply(c("sexe","tabac","vit"),grep,names(rt),value=T)] #grep est utile si je donne à ces 3 variables des noms avec suffixe
 
-# for (i in names_rt){
-#   assign(paste0("q",i),qplot(rt[,i],
-#               geom="histogram",
-#               binwidth = 0.5,
-#               #main=i,
-#               xlab=i))
-#   #print(hist(rt[,i],breaks = 20, main=i)) 
-# } 
-# grid.arrange(get(paste0("q",names_rt)))
-
-# noquote(paste(noquote(paste0("q",names_rt)),collapse=","))
-# grid.arrange(qage,qbmi,qcalories,qgraisses,qfibres,qalcool,qcholesterol,qbetadiet,qretdiet,qbetaplasma,qretplasma)
-
-#dev.off() #produce a null device message
+# qage <- qplot(rt$age,binwidth=1)
+# qbmi <- qplot(rt$bmi,binwidth=1)
+# qcalories <- qplot(rt$calories,binwidth=50)
+# qgraisses <- qplot(rt$graisses,binwidth=2)
+# qfibres <- qplot(rt$fibres,binwidth=0.5)
+# qalcool <- qplot(rt$alcool,binwidth=3)
+# qcholesterol <- qplot(rt$cholesterol,binwidth=50)
+# qbetadiet <- qplot(rt$betadiet,binwidth=40)
+# qretdiet <- qplot(rt$retdiet,binwidth=40)
+# qbetaplasma <- qplot(rt$betaplasma,binwidth=30)
+# qretplasma <- qplot(rt$retplasma,binwidth=30)
+#pl <- lapply(names_rt, function(x)get(paste0("q",x)))
 
 pl <- lapply(names_rt, function(.x) qplot(rt[,.x],xlab=NULL, main=paste("plot", .x)))
-#pl <- lapply(names_rt, function(x)get(paste0("q",x)))
+
 ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
 print(ml)
 ```
@@ -210,20 +190,20 @@ grid.arrange(tableGrob(t2,rows=NULL),tableGrob(t3,rows=NULL),tableGrob(t1,rows=N
 # Q2/Etudiez les relations existant entre toutes les paires possibles de variables. 
 NB : ce ne sont que les 9 variables de la régression demandé en question 3 qui sont concernées
 ```{r,echo=FALSE}
-var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") 
+#var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") #version lorsque tabc et vitamines sont quantitatives
+var <- c("retplasma","age","sexe","bmi","cholesterol","alcool","retdiet") 
 #var %in% names(rt)#pour voir quelle variable j'ai mal recopié
 
 ```
-Je peux faire une matrice de corrélation.
-Aucune condition n'est nécessaire pour faire des coefficients de corrélation. C'est pour les tester que nous avons besoin de vérifier les confidions de validité
+Je peux faire une matrice de corrélation. Je n'inclue ni vitamine ni tabac dans cette matrice car je les ai considérées comme des variables qualitatives à plusieurs classes. Je garde sexe qui est binaire.
+Aucune condition n'est nécessaire pour faire des coefficients de corrélation. C'est pour les tester que nous avons besoin de vérifier les confidions de validité.
 ```{r, echo = FALSE}
 mat <- round(cor(rt[,var]),3)
 #print(mat)
 kable(mat)
 ```
 
-scatter plot?
-Il faut ensuite interprêter la matrice. Pour cela je peux faire des schéma
+Il faut ensuite interprêter la matrice. Pour cela je peux faire des schémas: 
 
 ```{r , echo=FALSE}
 corrplot(cor(rt[,var]),method="circle")
@@ -233,7 +213,7 @@ corrplot(cor(rt[,var]),method="circle")
 mdspca(rt[,var])
 ```
 
-bmi, tabac et vitamine sont très proches du centre du cercle donc non interprétables
+bmi est très proches du centre du cercle donc non interprétable.
 Par contre on peut voir que les paires retdiet-cholestérol, retplasma-age sont fortement associés (corrélation positive), et ces deux groupes de variables sont indépendants l'un de l'autre car forme un angle droit avec le centre.
 sexe est également indépendant de retdiet et cholestérol.
 Alcool-sexe est négativement corrélée
@@ -259,15 +239,14 @@ couples<-lapply(c(0.2,0.4),function(w){
   #colnames(which_couple) <- c(paste0("var1.r",w),paste0("var2.r",w)) 
   return(which_couple)
 })
-print(couples)
 
 ```
 
-Est-ce pertinent de faire de tests de corrélation pour chaque variable?
-
+Est-ce pertinent de faire de tests de corrélation pour chaque variable? On peut se poser la question, en effet je n'avais aucune hypothèse de départ quant à ces corrélation et multiplier le nombre de tests augmente le risque alpha. Cependant pour les besoins du devoir je le fais quand même.
 
 Attention aux conditions de validité: 
-une des 2 variables du couple testé doit être normale
+une des 2 variables du couple testé doit suivre une loi normale. Je considère comme normale une variable dont l'histogramme montre une distribution en cloche. Lorsque la distribution ne semble pas normale, il faut interprêter les tests avec prudence. Je ne préfère pas faire des tests non paramétriques type test de corrélation de spearman, ni sur certaines variables pour garder une cohérence, ni sur toutes les variables pour ne pas m'empêcher de faire des tests paramétriques par la suite.
+
 ```{r, echo=FALSE}
 couplesb <- couples[[1]]
 couplesb$testvalid <- ifelse( couplesb$var1 %in% varnorm | couplesb$var2 %in% varnorm,TRUE,FALSE) 
@@ -289,11 +268,25 @@ print(couplesb)
 #couples$test <- cor.test(get(paste0("rt$",var1)),get(paste0("rt$",var2)))
 ```
 
-Pour r>=0.2, 5 couples ressortent:
-age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe,retdiet-cholestérol
+4 couples ont un coefficient de corrélation entre 0.2 et 0.4 (en nombre absolu).
+age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe.
 
-Il n'y a qu'un couple qui ressort pour r>=0.4 :
+Il n'y a qu'un couple avec un coefficient de corrélation supérieur ou égal à 0.4 :
 retdiet-cholestérol
+
+## étude des liens entre une variable qualitative à plusieurs classe et des variables quantitatives:
+```{r}
+pl <- lapply (names_rt, function(.x) {
+  ggplot(rt, aes(x = tabac, y = .x)) +
+  geom_boxplot(fill = "grey80", colour = "blue") +
+  scale_x_discrete() + xlab("Tabac") + ylab(.x)
+})
+
+ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
+
+print(ml)
+
+```
 
 
 
