@@ -33,13 +33,13 @@ J'ai 14 variables.
 
 ```{r, echo=FALSE, cache=TRUE}
 #summary(rt)
-rt$sexe <- factor(Recode(rt$sexe,"1=0;2=1"))
+rt$sexe <-as.numeric(Recode(rt$sexe,"1=0;2=1"))
 rt$vitamine <- factor(rt$vitamine)
 rt$tabac <- factor (rt$tabac)
 ```
 Les variables sont toutes reconnues comme quantitatives 
 mais en regardant plus attentivement les min et max on peut voir que certaines variables ne sont pas quantitatives:
-  + sexe a un minimum de 1 et un maximum de 2 c'est donc une variables qualitative binaire. Je la    recode en 0(homme)/1(femme) pour une interprétation plus facile par la suite et je la transforme en facteur.
+  + sexe a un minimum de 1 et un maximum de 2 c'est donc une variables qualitative binaire. Je la    recode en 0(homme)/1(femme) pour une interprétation plus facile par la suite. Je m'assure que c'est bien une valeur numérique pour pouvoir l'intégrer dans ma matrice de corrélation en question 2.
   + Les variables tabac et vitamine sont des variables qualitatives ordinales, il y a bien un ordre dans les classes mais je ne peux pas dire si l'espace entre 2 classes est le même. Pour tabac par exemple : ne pas fumer versus fumer anciennement aura-t-elle la même différence d'effet que fumer anciennement versus fumer actuellement? Je préfère donc les coder comme des variables qualitatives en attendant d'en savoir plus. Pour cela je les transforme simplement en facteur.
 
 Les autres variables sont quantitatives continues:
@@ -208,6 +208,9 @@ Il faut ensuite interprêter la matrice. Pour cela je peux faire des schémas:
 ```{r , echo=FALSE}
 corrplot(cor(rt[,var]),method="circle")
 ```
+Dans cette visualisation de la matrice de corrélation, on voit surtout la corrélation entre cholestérol et retdiet car les cercles ont une densité élevée et on voit que la corrélation est positive car le cercle est de couleur bleu. 
+
+Je trouve que la représentation graphique de l'analyse en composante principale est d'interprêtation plus aisée :
 
 ```{r, echo=FALSE}
 mdspca(rt[,var])
@@ -218,7 +221,7 @@ Par contre on peut voir que les paires retdiet-cholestérol, retplasma-age sont 
 sexe est également indépendant de retdiet et cholestérol.
 Alcool-sexe est négativement corrélée
 
-Je peux aussi sélectionner dans la matrice les valeurs absolues supérieures ou égales à certain niveau de corrélation
+Je peux aussi sélectionner dans la matrice les valeurs absolues supérieures ou égales à certain niveau de corrélation :
 ```{r,echo=FALSE}
 couples<-lapply(c(0.2,0.4),function(w){
   #pour supprimer les doublons
@@ -241,10 +244,16 @@ couples<-lapply(c(0.2,0.4),function(w){
 })
 
 ```
+4 couples ont un coefficient de corrélation entre 0.2 et 0.4 (en nombre absolu).
+age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe.
 
-Est-ce pertinent de faire de tests de corrélation pour chaque variable? On peut se poser la question, en effet je n'avais aucune hypothèse de départ quant à ces corrélation et multiplier le nombre de tests augmente le risque alpha. Cependant pour les besoins du devoir je le fais quand même.
+Il n'y a qu'un couple avec un coefficient de corrélation supérieur ou égal à 0.4 :
+retdiet-cholestérol
 
-Attention aux conditions de validité: 
+
+Est-ce pertinent de faire de tests de corrélation pour chaque variable? On peut se poser la question, en effet je n'avais aucune hypothèse de départ quant à ces corrélations et multiplier le nombre de tests augmente le risque alpha. Cependant pour les besoins du devoir je le fais quand même, mais je ne testerai que les corrélations supérieur à 0.2. En effet je ne sais pas quel sens je donnerai à une corrélation significative de 0.01 par exemple...
+
+Avant de faire une test de corrélation, il faut tester les conditions de validité: 
 une des 2 variables du couple testé doit suivre une loi normale. Je considère comme normale une variable dont l'histogramme montre une distribution en cloche. Lorsque la distribution ne semble pas normale, il faut interprêter les tests avec prudence. Je ne préfère pas faire des tests non paramétriques type test de corrélation de spearman, ni sur certaines variables pour garder une cohérence, ni sur toutes les variables pour ne pas m'empêcher de faire des tests paramétriques par la suite.
 
 ```{r, echo=FALSE}
@@ -267,17 +276,12 @@ couplesb$test<-sapply(1:nrow(couplesb), function(x) {
 print(couplesb)
 #couples$test <- cor.test(get(paste0("rt$",var1)),get(paste0("rt$",var2)))
 ```
-
-4 couples ont un coefficient de corrélation entre 0.2 et 0.4 (en nombre absolu).
-age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe.
-
-Il n'y a qu'un couple avec un coefficient de corrélation supérieur ou égal à 0.4 :
-retdiet-cholestérol
+Toutes les corrélations supérieures ou égales à 0.2 sont significatives. Il faut cependant prêter attention au fait que 2 couples ont des conditions de validité probablement non remplies : sexe_age et sexe-alcool car age et alcool n'ont pas une allure normale (et sexe est binaire donc ne peut pas être normale).
 
 ## étude des liens entre une variable qualitative à plusieurs classe et des variables quantitatives:
 ```{r}
 pl <- lapply (names_rt, function(.x) {
-  ggplot(rt, aes(x = tabac, y = .x)) +
+  ggplot(rt, aes(x = tabac, y = get(.x))) +
   geom_boxplot(fill = "grey80", colour = "blue") +
   scale_x_discrete() + xlab("Tabac") + ylab(.x)
 })
