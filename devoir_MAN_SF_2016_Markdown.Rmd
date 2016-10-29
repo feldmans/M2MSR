@@ -15,7 +15,7 @@ library(psy)
 library(corrplot)
 library(gridExtra)
 library(ggplot2)
-library(car)
+#library(car)
 library(dplyr)
 library(grid)
 library(knitr)
@@ -24,18 +24,17 @@ rt <- read.csv2("data/presentationTPretinol.csv")
 ```
 
 ## Nombre de variables
-```{r cars}
+```{r, echo=FALSE, eval= FALSE}
 dim(rt)
 ```
-J'ai 14 variables.
+Le jeu de données présentation retinol fait 315 lignes et 14 colonnes ou variables. 
 
 ## Type de variables
 
-```{r, echo=FALSE, cache=TRUE}
-#summary(rt)
-rt$sexe <-as.numeric(Recode(rt$sexe,"1=0;2=1"))
-rt$vitamine <- factor(rt$vitamine)
-rt$tabac <- factor (rt$tabac)
+```{r, echo=FALSE}
+rt$sexe <-as.numeric(recode(rt$sexe,0,1)) #recode from package dplyr. Je veux garder la structure numérique.
+rt$vitamine <- factor(rt$vitamine, levels=c(1,2,3), labels=c("souvent","parfois","non")) #J'ai d'abord regardé l'ordre des levels avant de les recoder.
+rt$tabac <- factor (rt$tabac, levels=c(1,2,3), labels=c("jamais","autrefois","actuellement"))
 ```
 Les variables sont toutes reconnues comme quantitatives 
 mais en regardant plus attentivement les min et max on peut voir que certaines variables ne sont pas quantitatives:
@@ -321,6 +320,7 @@ C'est le cas partout sauf pour la variable alcool. Je préfère donc ne pas fair
 names.vit.an <- c("tabac","vitamine")
 tab.vit.an<-lapply(names.vit.an,function(.i){
 anov<- data.frame(t(sapply(var[! var %in% c("sexe","alcool")], function(.x){
+  #browser()
  res <- lm(get(.x) ~ get(.i), rt )
  dp <- drop1(res, test="F")
  pv <- round(dp$`Pr(>F)`[!is.na(dp$`Pr(>F)`)],3)
@@ -331,7 +331,8 @@ tab.vit <- do.call(rbind,tab.vit.an)
 tab.vit$variable_qualitative <- names.vit.an
 tab.vit <- tab.vit[,c(6,1:5)]
 
-grid.arrange(tableGrob(tab.vit,rows=NULL))
+kable(tab.vit)
+#grid.arrange(tableGrob(tab.vit,rows=NULL))
 ```
 interprétation :
   + tabac est significativement associée à retplasma et age
@@ -385,16 +386,15 @@ ni tabac ni vitamine n'est globablement associé à retplasma.
 ## Recherche d'intéractions entre les variables explicatives:
 
 ```{r, echo=FALSE}
-mod_inter <- data.frame(add1(mod,~.^2,test="F"))
+mod_inter <- data.frame(add1(mod,~.^2,test="Chisq")) #je ne sais pas si on peut utiliser F ici alors je préfère utiliser chisq qui marche pour lm aussi si j'ai bien compris.
 isort <- order (mod_inter$Pr..Chi.)
 mod_order <- mod_inter[isort,]
 mod_order$Pr..Chi. <- round(mod_order$Pr..Chi.,4) 
 mod_order$signif <- ifelse(mod_order$Pr..Chi.<= 0.05,"*","")
 
-mytheme <- ttheme_default(base_size=10)
-
-a <-tableGrob(mod_order[1:14,], rows = rownames(mod_order)[1:14],theme = mytheme)
-b <- tableGrob(mod_order[15:nrow(mod_order),], rows = rownames(mod_order)[15:nrow(mod_order)],theme = mytheme)
+#mytheme <- ttheme_default(base_size=10)
+#a <-tableGrob(mod_order[1:14,], rows = rownames(mod_order)[1:14],theme = mytheme)
+#b <- tableGrob(mod_order[15:nrow(mod_order),], rows = rownames(mod_order)[15:nrow(mod_order)],theme = mytheme)
 .df<-mod_order 
 kable(.df)
 # grid.draw(a)
