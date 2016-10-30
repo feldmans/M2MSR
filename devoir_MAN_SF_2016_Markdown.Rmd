@@ -2,8 +2,10 @@
 title: "devoir MAN 2016"
 author: "sarah FELDMAN"
 date: "21 octobre 2016"
-output: html_document
+output: word_document
 ---
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -15,7 +17,6 @@ library(psy)
 library(corrplot)
 library(gridExtra)
 library(ggplot2)
-#library(car)
 library(dplyr)
 library(grid)
 library(knitr)
@@ -24,6 +25,7 @@ rt <- read.csv2("data/presentationTPretinol.csv")
 ```
 
 ## Nombre de variables
+
 ```{r, echo=FALSE, eval= FALSE}
 dim(rt)
 nrow(rt)
@@ -31,7 +33,8 @@ ncol(rt)
 ```
 Le jeu de données présentation retinol fait `r nrow(rt)` lignes et `r ncol(rt)` colonnes ou variables. 
 
-## Type de variables
+
+## Type de variable
 
 ```{r, echo=FALSE}
 rt$sexe <-as.numeric(recode(rt$sexe,0,1)) #1->0=masc 2->1=fem ; recode from package dplyr. Je veux garder la structure numérique.
@@ -58,17 +61,14 @@ age, bmi, calories, graisses, fibres, alcool, cholestérol, betadiet,retdiet,bet
 
 
 ```{r , echo=FALSE}
-# quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholestérol","betadiet","retdiet","betaplasma","retplasma")
-#rt[,quantcont] ne marche pas : je recherche si je n'ai pas mal écrit une des variables :
-# quantcont[!quantcont %in% names(rt)] : cholestérol au lieu de cholesterol
 quantcont<- c("age", "bmi", "calories", "graisses", "fibres", "alcool", "cholesterol","betadiet","retdiet","betaplasma","retplasma")
 qual.ord <- c("tabac","vitamine")
 binaire <- c("sexe")
-#grid.table(cbind(variables.quantitatives.continues=quantcont,variables.quantitatives.discretes=quantdis,variable.binaire=binaire))
 kable(cbind(variables.quantitatives.continues=quantcont,variables.qualitatives.orinales=c(qual.ord, rep("",9)),variable.binaire=c(binaire,rep("",10)))) #je dois rajouter des "" à la fin des vecteurs trop courts pour pouvoir créer un tableau
 ```
 
-# Données abberrantes
+
+## Données abberrantes
 
 Observer ses variables sert également à dépister les "bizarreries".
 Par exemple, j'ai un doute concernant le max d'alcool, je vais donc regarder plus attentivement la variable, par exemple avec une table. 
@@ -79,25 +79,13 @@ Je passe de 35 à 203 verres par semaine...203/7=29 verres par jour, il y a prob
 
 La valeur extrême d'alcool influe beaucoup sur la symétrie de ma distribution. On peut le voir notamment en comparant la moyenne (`r round(mean(rt$alcool),2)`) et la médiane (`r median(rt$alcool)`). Cependant je ne sais pas si je peux la retirer sans conséquence, je préfère donc la garder pour la suite du devoir.
 
+
 ## Distribution des variables
 
 ```{r , message=FALSE,echo=FALSE}
 
 non_cont<- c("sexe.bin","tabac.f","vitamine.f")
 names_rt <- names(rt)[!names(rt) %in% sapply(c("sexe","tabac","vit"),grep,names(rt),value=T)] #grep est utile si je donne à ces 3 variables des noms avec suffixe
-
-# qage <- qplot(rt$age,binwidth=1)
-# qbmi <- qplot(rt$bmi,binwidth=1)
-# qcalories <- qplot(rt$calories,binwidth=50)
-# qgraisses <- qplot(rt$graisses,binwidth=2)
-# qfibres <- qplot(rt$fibres,binwidth=0.5)
-# qalcool <- qplot(rt$alcool,binwidth=3)
-# qcholesterol <- qplot(rt$cholesterol,binwidth=50)
-# qbetadiet <- qplot(rt$betadiet,binwidth=40)
-# qretdiet <- qplot(rt$retdiet,binwidth=40)
-# qbetaplasma <- qplot(rt$betaplasma,binwidth=30)
-# qretplasma <- qplot(rt$retplasma,binwidth=30)
-#pl <- lapply(names_rt, function(x)get(paste0("q",x)))
 
 pl <- lapply(names_rt, function(.x) qplot(rt[,.x],xlab=NULL, main=paste("distribution de ", .x),fill=I("navajowhite3"), col=I("pink4")))
 
@@ -117,9 +105,7 @@ Lecture des histogrammes :
 varnorm<- c("retplasma", "bmi", "cholesterol", "retdiet", "graisses", "betadiet", "betaplasma", "calories", "fibres")
 varnnorm<-c("age", "sexe", "tabac", "vitamine", "alcool","", "", "", "")
 
-#grid.table(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
 kable(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
-
 ```
 
 
@@ -129,7 +115,6 @@ kable(cbind(variables.normales=varnorm,variables.non.normales=varnnorm))
 
 ```{r , echo=FALSE}
 kable(data.frame (
-  #var=names(rt[quantcont]),
   n=apply(rt[quantcont],2,function(x)sum(!is.na(x))),
   missing=apply(rt[quantcont],2,function(x)sum(is.na(x))),
   moyenne =round(apply(rt[quantcont],2,mean,na.rm=T),1),
@@ -145,9 +130,9 @@ kable(data.frame (
 - pour les variables qualitatives:
   
 ```{r, echo=FALSE}
-t1 <- cbind(table(rt$sexe,useNA="a"),round(prop.table(table(rt$sexe,useNA="a"))*100,0))
-tot1 <- cbind(sum(table(rt$sexe)),sum(prop.table(table(rt$sexe,useNA="a"))*100))
-t1 <- rbind(t1,tot1)
+t1 <- cbind(table(rt$sexe,useNA="a"),round(prop.table(table(rt$sexe,useNA="a"))*100,0))#proportion
+tot1 <- cbind(sum(table(rt$sexe)),sum(prop.table(table(rt$sexe,useNA="a"))*100))#effectif
+t1 <- rbind(t1,tot1)#je colle les 2 lignes
 t1 <- t1[c(1,2,4,3),]
 rownames(t1) <- c("0 (homme)","1 (femme)","N", "missing")
 colnames(t1) <- c("Fréquence","Pourcentage")
@@ -157,11 +142,10 @@ rownames(t1) <- NULL
 t1 <- t1[,c(3,1,2)]
 kable(t1,rownames="sexe")
 
-t2 <- cbind(table(rt$vitamine,useNA="a"),round(prop.table(table(rt$vitamine,useNA="a"))*100,0))
-tot2 <- cbind(sum(table(rt$vitamine)),sum(prop.table(table(rt$vitamine,useNA="a"))*100))
-t2 <- rbind(t2,tot2)
+t2 <- cbind(table(rt$vitamine,useNA="a"),round(prop.table(table(rt$vitamine,useNA="a"))*100,0))#proportion
+tot2 <- cbind(sum(table(rt$vitamine)),sum(prop.table(table(rt$vitamine,useNA="a"))*100))#effectif
+t2 <- rbind(t2,tot2)#je colle les 2 lignes
 t2 <- t2[c(1,2,3,5,4),]
-#rownames(t2) <- c(1,2,3,"N", "missing")
 rownames(t2) <- c(rownames(t2)[1:3],"N", "missing")
 colnames(t2) <- c("Fréquence","Pourcentage")
 t2 <- data.frame(t2)
@@ -170,11 +154,10 @@ rownames(t2) <- NULL
 t2 <- t2[,c(3,1,2)]
 kable(t2,rownames="vitamine")
 
-t3 <- cbind(table(rt$tabac,useNA="a"),round(prop.table(table(rt$tabac,useNA="a"))*100,0))
-tot3 <- cbind(sum(table(rt$tabac)),sum(prop.table(table(rt$tabac,useNA="a"))*100))
-t3 <- rbind(t3,tot3)
+t3 <- cbind(table(rt$tabac,useNA="a"),round(prop.table(table(rt$tabac,useNA="a"))*100,0))#proportion
+tot3 <- cbind(sum(table(rt$tabac)),sum(prop.table(table(rt$tabac,useNA="a"))*100))#effectif
+t3 <- rbind(t3,tot3)#je colle les 2 lignes
 t3 <- t3[c(1,2,3,5,4),]
-#rownames(t3) <- c(1,2,3,"N", "missing")
 rownames(t3) <- c(rownames(t3)[1:3],"N", "missing")
 colnames(t3) <- c("Fréquence","Pourcentage")
 t3 <- data.frame(t3)
@@ -182,30 +165,28 @@ t3$tabac <- rownames(t3)
 rownames(t3) <- NULL 
 t3 <- t3[,c(3,1,2)]
 kable(t3,rownames="tabac")
-
-#grid.arrange(tableGrob(t2,rows=NULL),tableGrob(t3,rows=NULL),tableGrob(t1,rows=NULL),ncol=2)
 ```
 
 
-# Exemples de représentation graphique des variables :
+## Exemples de représentation graphique des variables :
 
-### barplot pour tabac et vitamine
+### Diagrammes pour tabac et vitamine
 Je veux représenter des pourcentages, un barplot est pour moi plus parlant qu'un camembert (pie).
+
 ```{r, echo=FALSE}
-#pl <- lapply(c("tabac","vitamine"), function(.x) qplot(rt[,.x],xlab=NULL, main=paste("plot", .x),fill=I("navajowhite3"), asp="",col=I("pink4"))) #je narrive pas à changer l'échelle des ordonnées avec qplot, je passe à ggplot
 
 pl <- lapply(c("tabac","vitamine"), function(.x) {
   ggplot(rt, aes(x = rt[,.x])) +  
-    geom_bar(aes(y = (..count..)/sum(..count..)),fill=I("lightsteelblue2"), col=I("paleturquoise4")) + 
+    geom_bar(aes(y = (..count..)/sum(..count..)),fill=I("lightsteelblue2"), col=I("paleturquoise4")) + #pour avoir l'ordonnée en pourcentage
     xlab(.x) + ylab("percent")+ ggtitle (paste0("Répartition de ",.x)) +
     scale_y_continuous(labels = scales::percent)
 })
-
 ml <- marrangeGrob(pl,nrow=1,ncol=2,top = NULL)
 print(ml)
 ```
 
-### boxplot pour les variables quantitatives comme age ou ret plasma
+
+### Boîtes à moustache pour les variables quantitatives comme age ou ret plasma
 
 ```{r, echo=FALSE}
 pl <- lapply(c("age","retplasma"), function(.y) {
@@ -220,15 +201,17 @@ print(ml)
 ```
 
 
+
+
 # Q2/Etudiez les relations existant entre toutes les paires possibles de variables. 
 
 NB : ce ne sont que les 9 variables de la régression demandées en question 3 qui sont concernées.
 
 ```{r,echo=FALSE}
-#var <- c("retplasma","age","sexe","bmi","tabac","vitamine","cholesterol","alcool","retdiet") #version lorsque tabc et vitamines sont quantitatives
 var <- c("retplasma","age","sexe","bmi","cholesterol","alcool","retdiet") 
 #var %in% names(rt)#pour voir quelle variable j'ai mal recopié
 ```
+
 
 ## Matrice de corrélation
 
@@ -238,7 +221,6 @@ Aucune condition n'est nécessaire pour faire des coefficients de corrélation. 
 
 ```{r, echo = FALSE}
 mat <- round(cor(rt[,var]),3)
-#print(mat)
 kable(mat)
 ```
 
@@ -260,7 +242,7 @@ mdspca(rt[,var])
     + bmi est très proches du centre du cercle donc non interprétable.  
     + les paires retdiet-cholestérol, retplasma-age sont fortement associés (corrélation positive), et ces deux groupes de variables sont indépendants l'un de l'autre car forme un angle droit avec le centre.  
     + sexe est également indépendant de retdiet et cholestérol.  
-    + Alcool-sexe est négativement corrélée.
+    + alcool-sexe est négativement corrélée.  
 
 
 - Je peux aussi sélectionner dans la matrice les valeurs absolues supérieures ou égales à certain niveau de corrélation :
@@ -277,26 +259,23 @@ couples<-lapply(c(0.2,0.4),function(w){
   #pour trouver les noms de ligne et colonne de ces coefficients
   which_couple <- lapply(w_r,function(x){
     k <- arrayInd(x, dim(mat2))
-    #paste(rownames(mat2)[k[,1]],"-", colnames(mat2)[k[,2]])
     d<-data.frame(var1=rownames(mat2)[k[,1]], var2=colnames(mat2)[k[,2]],r=mat2[x])
-   # colnames(d)<- c("variable 1","variable 2", "coefficient de corrélation")
     return(d)
   })
   #Je colle les listes
-  #browser()
   which_couple <- data.frame(do.call(rbind,which_couple))
   #Je nomme les 2 listes de niveau supérieur selon la valeur du coefficient
-  #colnames(which_couple) <- c(paste0("var1.r",w),paste0("var2.r",w)) 
   return(which_couple)
 })
+
 couples_rename <- couples
-colnames(couples_rename[[1]])<- c("variable 1","variable 2", "coefficient de corrélation")
+colnames(couples_rename[[1]])<- c("variable 1","variable 2", "coefficient de corrélation") #Je ne renomme que le premier tableau, le 2e ne me servira pas ici
 kable(couples_rename[[1]])
 
 ```
 
 4 couples ont un coefficient de corrélation entre 0.2 et 0.4 (en nombre absolu).    
-age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe.
+age-retplasma, sexe-age, cholesterol-sexe, alcool-sexe.
 
 Il n'y a qu'un couple avec un coefficient de corrélation supérieur ou égal à 0.4 :    
 retdiet-cholestérol
@@ -327,18 +306,15 @@ couplesb$test<-sapply(1:nrow(couplesb), function(x) {
   .var1rt <- rt[,as.character(.var1)]
   .var2rt <- rt[,as.character(.var2)]
   testcouple<-cor.test(.var1rt,.var2rt)
-  # if couplesb$testvalid[x] testcouple<-cor.test(.var1rt,.var2rt)
-  # else testcouple <- cor.test(.var1rt,.var2rt, method="spearman") #je préfère ne pas utiliser du non paramétrique car m'empêcherait de faire des analyses plus poussées ensuite
-  ##browser()
   pcor<-round(testcouple$p.value,5)
   return(pcor)
 })
 
 kable(couplesb)
-#couples$test <- cor.test(get(paste0("rt$",var1)),get(paste0("rt$",var2)))
 ```
 
 Toutes les corrélations supérieures ou égales à 0.2 sont significatives car p<= 0.05. Il faut cependant prêter attention au fait que 2 couples ont des conditions de validité probablement non remplies : sexe-age et sexe-alcool car age et alcool n'ont pas une allure normale (et sexe est binaire donc ne peut pas être normale).
+
 
 ## étude des liens entre une variable qualitative à plusieurs classe et des variables quantitatives:
 
@@ -355,7 +331,7 @@ sapply(c("tabac","vitamine"),function(.i){
   ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
   
   print(ml)
-  
+  #grid.newpage() #ne marche pas, j'ai copié coller les boxplots depuis la fenêtre windows
 })
 ```
 
@@ -378,7 +354,6 @@ var_vit <- var_vit[,c(7,1:6)]
 rownames (var_vit) <- NULL
 kable(var_vit)
 
-#grid.arrange(tableGrob(var_tab,rows=NULL),tableGrob(var_vit,rows=NULL),nrow=2)
 ```
 
 C'est le cas partout sauf pour la variable alcool. Je préfère donc ne pas faire de test avec alcool.
@@ -390,12 +365,11 @@ Je fais l'approximation que toutes les variables suivent une loi normale, d'auta
 ```{r, echo=FALSE}
 names.vit.an <- c("tabac","vitamine")
 tab.vit.an<-lapply(names.vit.an,function(.i){
-anov<- data.frame(t(sapply(var[! var %in% c("sexe","alcool")], function(.x){
-  #browser()
+  #calcul des anova pour chaque variables quantitatives valides
+anov<- data.frame(t(sapply(var[! var %in% c("sexe","alcool")], function(.x){ #je ne calcule pas pour alcool et sexe
  res <- lm(get(.x) ~ get(.i), rt )
  dp <- drop1(res, test="F")
  pv <- round(dp$`Pr(>F)`[!is.na(dp$`Pr(>F)`)],3)
- #names(pv)<-.i
 })))
 })
 tab.vit <- do.call(rbind,tab.vit.an)
@@ -403,7 +377,6 @@ tab.vit$variable_qualitative <- names.vit.an
 tab.vit <- tab.vit[,c(6,1:5)]
 
 kable(tab.vit)
-#grid.arrange(tableGrob(tab.vit,rows=NULL))
 ```
 
 interprétation :   
@@ -439,6 +412,7 @@ Le seuil de significativité est p<=0.05 :
 
 
 
+
 # Q3/Effectuez ensuite une régression linéaire où la variable à expliquer sera la concentration en rétinol plasmatique, les autres variables étant explicatives. Recherchez des interactions entre les variables explicatives. 
 
 
@@ -454,6 +428,7 @@ fpca(retplasma ~ age + sexe + bmi + cholesterol + alcool + retdiet,data=rt)
 
 - age-retplasma est un couple qui ressortait dans la matrice de corrélation avec un r=0.212 significativement différent de 0.  
 - sexe-retplasma ne ressortait pas car inférieur à 0.2, comme on peut le voir sur l'acp focalisée.
+
 
 ## régression linéaire multiple
 
@@ -473,7 +448,6 @@ Il y a 3 conditions de validité aux modèles :
 En pratique on ne teste que la première des conditions :
 
 ```{r , echo=FALSE}
-#hist(resid(mod)) #Je n'ai pas réussi à le transformer en ggplot
 qplot(resid(mod),binwidth=100, fill=I("navajowhite3"), col=I("pink4"), main="distribution des résidus du modèle")
 ```
 
@@ -482,6 +456,7 @@ La distribution des résidus a une allure normale, mon modèle est donc valide.
 ### Interprêtation des coefficients beta du modèle
 
 ```{r , echo=FALSE}
+#Création d'un tableau estimate à partir de summary et de confint
 s <- summary(mod)
 coef<-s$coefficients
 estim <- data.frame(estimateur=round(as.numeric(coef[,1]),2))
@@ -519,6 +494,7 @@ kable(coef)
 Ni tabac ni vitamine ne sont globablement associées à retplasma.
 
 
+
 ## Recherche d'interactions entre les variables explicatives:
 
 ```{r, echo=FALSE}
@@ -534,11 +510,12 @@ kable(.df)
 
 Légende : * p value <= 0.05 soit interaction significative
 
-#### Interprétation
+Interprétation
 J'ai 9 interactions significatives (p value<=0.05) : vitamine-alcool, cholestérol-alcool, bmi-alcool, age-alcool,sexe-bmi,alcool-retdiet, tabac-alcool,sexe-alcool,sexe-tabac.
 
 ### Je trace la représentation graphique des pvalue des 28 interactions possibles : 
 ```{r, echo=FALSE}
+#tiré du livre du Pr Falissard mais transformé en ggplot
 x <- 1-na.omit(mod_order$Pr..Chi.)
 y <- length(x):1
 g<-ggplot(na.omit(mod_order),aes(x,y))+
@@ -548,6 +525,8 @@ g+  geom_abline(slope=coefficients(lm(1:length(x) ~ -1 + x[length(x):1])),color=
 ```
 
 J'ai bien 9 points au dessus de la ligne.
+
+
 
 
 # Q4/Transformez la variable "rétinol plasmatique" en une variable binaire (en la coupant en deux au niveau de la médiane). Refaites les calculs précédents en ayant recours cette fois à une régression logistique.
@@ -648,7 +627,6 @@ kable(.df.bin)
 # grid.draw(a)
 # grid.newpage()
 # grid.draw(b)
-
 #grid.arrange(a,b,ncol=2)
 
 length(rownames(.df.bin)[-29]) #nombre d'interaction (le 29e est none)
@@ -656,13 +634,14 @@ length(rownames(.df.bin)[-29]) #nombre d'interaction (le 29e est none)
 
 Légende : * p value <= 0.05 soit coefficient beta significativement différent de 0
 
-#### Interprétation :  
+Interprétation :  
 J'ai 5 interactions significatives (p value<=0.05) : age-alcool, vitamine-alcool, sexe-alcool, cholesterol-alcool, tabac-alcool.
 
 
 ### Je trace la représentation graphique des pvalue des 28 interactions possibles
 
 ```{r, echo=FALSE}
+#tiré du livre du Pr Falissard mais transformé en ggplot
 x <- 1-na.omit(mod_order.bin$Pr..Chi.)
 y <- length(x):1
 
