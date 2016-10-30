@@ -77,7 +77,7 @@ table(rt$alcool)
 ```
 Je passe de 35 à 203 verres par semaine...203/7=29 verres par jour, il y a probablement un erreur de codage. 
 
-La valeur extrême d'alcool influe beaucoup sur la symétrie de ma distribution. On peut le voir notamment en comparant la moyenne et la médiane : `r mean(rt$alcool)` de moyenne et `r median(rt$alcool)` de mediane. Cependant je ne sais pas si je peux la retirer sans conséquence, je préfère donc la garder pour la suite du devoir.
+La valeur extrême d'alcool influe beaucoup sur la symétrie de ma distribution. On peut le voir notamment en comparant la moyenne (`r round(mean(rt$alcool),2)`) et la médiane (`r median(rt$alcool)`). Cependant je ne sais pas si je peux la retirer sans conséquence, je préfère donc la garder pour la suite du devoir.
 
 ## Distribution des variables
 
@@ -99,7 +99,7 @@ names_rt <- names(rt)[!names(rt) %in% sapply(c("sexe","tabac","vit"),grep,names(
 # qretplasma <- qplot(rt$retplasma,binwidth=30)
 #pl <- lapply(names_rt, function(x)get(paste0("q",x)))
 
-pl <- lapply(names_rt, function(.x) qplot(rt[,.x],xlab=NULL, main=paste("plot", .x),fill=I("navajowhite3"), col=I("pink4")))
+pl <- lapply(names_rt, function(.x) qplot(rt[,.x],xlab=NULL, main=paste("distribution de ", .x),fill=I("navajowhite3"), col=I("pink4")))
 
 ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
 print(ml)
@@ -197,7 +197,7 @@ Je veux représenter des pourcentages, un barplot est pour moi plus parlant qu'u
 pl <- lapply(c("tabac","vitamine"), function(.x) {
   ggplot(rt, aes(x = rt[,.x])) +  
     geom_bar(aes(y = (..count..)/sum(..count..)),fill=I("lightsteelblue2"), col=I("paleturquoise4")) + 
-    xlab(.x) + ylab("percent")+
+    xlab(.x) + ylab("percent")+ ggtitle (paste0("Répartition de ",.x)) +
     scale_y_continuous(labels = scales::percent)
 })
 
@@ -212,7 +212,7 @@ pl <- lapply(c("age","retplasma"), function(.y) {
   ggplot(rt, aes(y = rt[,.y], x=1)) +
     stat_boxplot(geom = "errorbar", width = 0.5, color="lightsteelblue4") +  
     geom_boxplot(fill = "lightsteelblue2", color = "lightsteelblue4", width=1) +
-    scale_x_discrete() + xlab(.y) +ylab(NULL)
+    scale_x_discrete() + xlab(NULL) +ylab(ifelse(.y=="age","age (an)","rétinol plasmatique (ng/ml)")) + ggtitle (paste0("Dispersion de ", .y))
 })
 ml <- marrangeGrob(pl,nrow=1,ncol=2,top = NULL)
 print(ml)
@@ -262,6 +262,7 @@ mdspca(rt[,var])
     + sexe est également indépendant de retdiet et cholestérol.  
     + Alcool-sexe est négativement corrélée.
 
+
 - Je peux aussi sélectionner dans la matrice les valeurs absolues supérieures ou égales à certain niveau de corrélation :
 
 ```{r,echo=FALSE}
@@ -294,11 +295,12 @@ kable(couples_rename[[1]])
 
 ```
 
-    + 4 couples ont un coefficient de corrélation entre 0.2 et 0.4 (en nombre absolu).    
+4 couples ont un coefficient de corrélation entre 0.2 et 0.4 (en nombre absolu).    
 age-retplasma, sexe_age, cholesterol-sexe, alcool-sexe.
 
-    + Il n'y a qu'un couple avec un coefficient de corrélation supérieur ou égal à 0.4 :    
+Il n'y a qu'un couple avec un coefficient de corrélation supérieur ou égal à 0.4 :    
 retdiet-cholestérol
+
 
 ## Tests de corrélation
 
@@ -308,7 +310,8 @@ On peut se poser la question, en effet je n'avais aucune hypothèse de départ q
 
 ### Conditions de validité
 Avant de faire une test de corrélation, il faut tester les conditions de validité :   
-- une des 2 variables du couple testé doit suivre une loi normale.  
+
+- Une des 2 variables du couple testé doit suivre une loi normale.  
 
 Je considère comme normale une variable dont l'histogramme montre une distribution en cloche. Lorsque la distribution ne semble pas normale, il faut interpréter les tests avec prudence. Je ne préfère pas faire des tests non paramétriques type test de corrélation de spearman, ni sur certaines variables pour garder une cohérence, ni sur toutes les variables pour ne pas m'empêcher de faire des tests paramétriques par la suite.
 
@@ -346,7 +349,7 @@ sapply(c("tabac","vitamine"),function(.i){
   pl <- lapply (var[! var %in% "sexe"], function(.x) {
     ggplot(rt, aes(x = get(.i), y = get(.x))) +
       geom_boxplot(fill = "lightsteelblue2", color = "lightsteelblue4") +
-      scale_x_discrete() + xlab(.i) + ylab(.x)
+      scale_x_discrete() + xlab(.i) + ylab(.x) +ggtitle (paste0("dispersion de ",.x," selon ",.i))
   })
   
   ml <- marrangeGrob(pl,ncol=2,nrow=3,top = NULL)
@@ -378,13 +381,13 @@ kable(var_vit)
 #grid.arrange(tableGrob(var_tab,rows=NULL),tableGrob(var_vit,rows=NULL),nrow=2)
 ```
 
-C'est le cas partout sauf pour la variable alcool. Je préfère donc ne pas faire de test avec alcool
+C'est le cas partout sauf pour la variable alcool. Je préfère donc ne pas faire de test avec alcool.
 
 - Distribution normale :   
 Je fais l'approximation que toutes les variables suivent une loi normale, d'autant plus que l'anova est un test qui résiste bien à des ditribution qui s'éloignent un peu de la normale.
   
-#### Je fais donc mon ANOVA entre ma variable qualitative et mes variables quantitative (alcool exclue)
-```{r}
+#### Je fais donc des ANOVA entre ma variable qualitative (vitamine ou tabac) et mes variables quantitatives (alcool exclue)
+```{r, echo=FALSE}
 names.vit.an <- c("tabac","vitamine")
 tab.vit.an<-lapply(names.vit.an,function(.i){
 anov<- data.frame(t(sapply(var[! var %in% c("sexe","alcool")], function(.x){
@@ -403,18 +406,21 @@ kable(tab.vit)
 #grid.arrange(tableGrob(tab.vit,rows=NULL))
 ```
 
-interprétation :  
-- tabac est significativement associée à retplasma et age
+interprétation :   
+
+- tabac est significativement associée à retplasma et age.  
 - vitamine est significativement associée à age.
+
 
 ### Etude du lien entre variables qualitatives  
 
 Je fais un test du chi 2 pour les couples :  
-- tabac-vitamine
-- tabac-sexe
+
+- tabac-vitamine  
+- tabac-sexe  
 - sexe-vitamine
 
-#### Condition de validité : Effectifs théoriques supérieur à 5
+#### Condition de validité : Effectifs théoriques supérieurs à 5
 ```{r, echo=FALSE,eval=FALSE}
 table(rt$tabac,rt$vitamine) #De tête je multiplie les plus petits totaux ligne et colonne/total
 table(rt$tabac,rt$sexe)
@@ -426,9 +432,10 @@ Tous les effectifs théoriques sont supérieurs à 5 pour les 3 tableaux de cont
 #### Test du Chi2
 
 Le seuil de significativité est p<=0.05 :  
+
 - tabac et vitamine ne sont pas significativement liées :  `r round(chisq.test(rt$tabac,rt$vitamine, correct=FALSE)$p.value,3)`    
 - tabac et sexe sont significativement liées : p value = `r round(chisq.test(rt$tabac,rt$sexe, correct=FALSE)$p.value,3)`  
--sexe et vitamine sont significativement liées : p value = `r round(chisq.test(rt$sexe,rt$vitamine, correct=FALSE)$p.value,3)`
+- sexe et vitamine sont significativement liées : p value = `r round(chisq.test(rt$sexe,rt$vitamine, correct=FALSE)$p.value,3)`
 
 
 
@@ -437,13 +444,14 @@ Le seuil de significativité est p<=0.05 :
 
 ## Analyse en composante principale focalisée
 
-Je peux commencer par regarder les intéraction enter retplasma  et les variables explicatives avec une acp focalisée. Je retire cependant vitamine et tabac car fpca se base sur une matrice de corrélation, il faut donc faire attention à l'interprêtation du schéma car les intéractions seront peutêtre modifiées en rajoutant vitamine et tabac:
+Je peux commencer par regarder les interaction enter retplasma  et les variables explicatives avec une acp focalisée. Je retire cependant vitamine et tabac car fpca se base sur une matrice de corrélation, il faut donc faire attention à l'interprêtation du schéma car les interactions seront peutêtre modifiées en rajoutant vitamine et tabac:
 
 ```{r , echo=FALSE}
 fpca(retplasma ~ age + sexe + bmi + cholesterol + alcool + retdiet,data=rt)
 ```
 
-2 variables semblent significativement liée à retplasma : age et sexe.    
+2 variables semblent significativement liée à retplasma : age et sexe.
+
 - age-retplasma est un couple qui ressortait dans la matrice de corrélation avec un r=0.212 significativement différent de 0.  
 - sexe-retplasma ne ressortait pas car inférieur à 0.2, comme on peut le voir sur l'acp focalisée.
 
@@ -457,10 +465,12 @@ mod <- lm(retplasma ~ age + sexe + bmi + tabac + vitamine + cholesterol + alcool
 
 ### Vérification des conditions de validité:
 Il y a 3 conditions de validité aux modèles :
-- la normalité de bruit
+
+- la normalité de bruit  
 - la variance du bruit ne doit dépendre ni de la variable à expliquer ni de la variable explicative
-- le bruit doit être du vrai bruit
-En pratique on ne teste que la première des conditions:
+- le bruit doit être du vrai bruit  
+
+En pratique on ne teste que la première des conditions :
 
 ```{r , echo=FALSE}
 #hist(resid(mod)) #Je n'ai pas réussi à le transformer en ggplot
@@ -509,7 +519,7 @@ kable(coef)
 Ni tabac ni vitamine ne sont globablement associées à retplasma.
 
 
-## Recherche d'intéractions entre les variables explicatives:
+## Recherche d'interactions entre les variables explicatives:
 
 ```{r, echo=FALSE}
 mod_inter <- data.frame(add1(mod,~.^2,test="Chisq")) #je ne sais pas si on peut utiliser F ici alors je préfère utiliser chisq qui marche pour lm aussi si j'ai bien compris.
@@ -522,11 +532,12 @@ mod_order$signif <- ifelse(mod_order$Pr..Chi.<= 0.05,"*","")
 kable(.df)
 ```
 
-Légende : * p value <= 0.05 soit intéraction significative
+Légende : * p value <= 0.05 soit interaction significative
 
-J'ai 9 intéractions significatives : vitamine-alcool, cholestérol-alcool, bmi-alcool, age-alcool,sexe-bmi,alcool-retdiet, tabac-alcool,sexe-alcool,sexe-tabac.
+#### Interprétation
+J'ai 9 interactions significatives (p value<=0.05) : vitamine-alcool, cholestérol-alcool, bmi-alcool, age-alcool,sexe-bmi,alcool-retdiet, tabac-alcool,sexe-alcool,sexe-tabac.
 
-### Je trace la représentation graphique des pvalue des 28 intéractions possibles : 
+### Je trace la représentation graphique des pvalue des 28 interactions possibles : 
 ```{r, echo=FALSE}
 x <- 1-na.omit(mod_order$Pr..Chi.)
 y <- length(x):1
@@ -616,7 +627,7 @@ kable(coef)
 Ni tabac ni vitamine ne sont globablement associées à retplasma.
 
 
-## Recherche d'intéractions entre les variables explicatives:
+## Recherche d'interactions entre les variables explicatives:
 
 ```{r, echo=FALSE}
 mod_inter.bin <- data.frame(add1(mod.bin,~.^2,test="Chisq")) 
@@ -640,16 +651,16 @@ kable(.df.bin)
 
 #grid.arrange(a,b,ncol=2)
 
-length(rownames(.df.bin)[-29]) #nombre d'intéraction (le 29e est none)
+length(rownames(.df.bin)[-29]) #nombre d'interaction (le 29e est none)
 ```
 
 Légende : * p value <= 0.05 soit coefficient beta significativement différent de 0
 
-Interprétation :  
-J'ai 5 intéractions significatives : age-alcool, vitamine-alcool, sexe-alcool, cholesterol-alcool, tabac-alcool.
+#### Interprétation :  
+J'ai 5 interactions significatives (p value<=0.05) : age-alcool, vitamine-alcool, sexe-alcool, cholesterol-alcool, tabac-alcool.
 
 
-### Je trace la représentation graphique des pvalue des 28 intéractions possibles
+### Je trace la représentation graphique des pvalue des 28 interactions possibles
 
 ```{r, echo=FALSE}
 x <- 1-na.omit(mod_order.bin$Pr..Chi.)
