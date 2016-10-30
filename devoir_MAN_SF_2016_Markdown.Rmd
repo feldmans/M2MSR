@@ -278,7 +278,7 @@ couples<-lapply(c(0.2,0.4),function(w){
     k <- arrayInd(x, dim(mat2))
     #paste(rownames(mat2)[k[,1]],"-", colnames(mat2)[k[,2]])
     d<-data.frame(var1=rownames(mat2)[k[,1]], var2=colnames(mat2)[k[,2]],r=mat2[x])
-    colnames(d)<- c("variable 1","variable 2", "coefficient de corrélation")
+   # colnames(d)<- c("variable 1","variable 2", "coefficient de corrélation")
     return(d)
   })
   #Je colle les listes
@@ -288,7 +288,9 @@ couples<-lapply(c(0.2,0.4),function(w){
   #colnames(which_couple) <- c(paste0("var1.r",w),paste0("var2.r",w)) 
   return(which_couple)
 })
-kable(couples[[1]])
+couples_rename <- couples
+colnames(couples_rename[[1]])<- c("variable 1","variable 2", "coefficient de corrélation")
+kable(couples_rename[[1]])
 
 ```
 
@@ -310,6 +312,8 @@ Avant de faire une test de corrélation, il faut tester les conditions de validi
 
 Je considère comme normale une variable dont l'histogramme montre une distribution en cloche. Lorsque la distribution ne semble pas normale, il faut interpréter les tests avec prudence. Je ne préfère pas faire des tests non paramétriques type test de corrélation de spearman, ni sur certaines variables pour garder une cohérence, ni sur toutes les variables pour ne pas m'empêcher de faire des tests paramétriques par la suite.
 
+### Résultats
+
 ```{r, echo=FALSE}
 couplesb <- couples[[1]]
 couplesb$testvalid <- ifelse( couplesb$var1 %in% varnorm | couplesb$var2 %in% varnorm,TRUE,FALSE) 
@@ -327,21 +331,21 @@ couplesb$test<-sapply(1:nrow(couplesb), function(x) {
   return(pcor)
 })
 
-print(couplesb)
+kable(couplesb)
 #couples$test <- cor.test(get(paste0("rt$",var1)),get(paste0("rt$",var2)))
 ```
 
-Toutes les corrélations supérieures ou égales à 0.2 sont significatives car p<= 0.05. Il faut cependant prêter attention au fait que 2 couples ont des conditions de validité probablement non remplies : sexe_age et sexe-alcool car age et alcool n'ont pas une allure normale (et sexe est binaire donc ne peut pas être normale).
+Toutes les corrélations supérieures ou égales à 0.2 sont significatives car p<= 0.05. Il faut cependant prêter attention au fait que 2 couples ont des conditions de validité probablement non remplies : sexe-age et sexe-alcool car age et alcool n'ont pas une allure normale (et sexe est binaire donc ne peut pas être normale).
 
 ## étude des liens entre une variable qualitative à plusieurs classe et des variables quantitatives:
 
 ### Graphiquement: je regarde la dispersion des variables quantitatives dans les différentes classes grâce à des boxplots
 
-```{r}
+```{r, echo=FALSE}
 sapply(c("tabac","vitamine"),function(.i){
   pl <- lapply (var[! var %in% "sexe"], function(.x) {
     ggplot(rt, aes(x = get(.i), y = get(.x))) +
-      geom_boxplot(fill = "grey80", colour = "blue") +
+      geom_boxplot(fill = "lightsteelblue2", color = "lightsteelblue4") +
       scale_x_discrete() + xlab(.i) + ylab(.x)
   })
   
@@ -355,7 +359,8 @@ sapply(c("tabac","vitamine"),function(.i){
 ### Comparaison de moyenne entre plusieurs groupes (plus de 2) : ANOVA
 
 #### Conditions de validité : 
-- variance du même ordre de grandeur dans tous les sous groupes
+
+- Variance du même ordre de grandeur dans tous les sous groupes :  
 
 ```{r, echo=FALSE}
 var_tab <- data.frame(round(sapply(var[! var %in% "sexe"], function(.x) by(rt[,.x],rt$tabac,sd,na.rm=T)),0))
@@ -372,8 +377,11 @@ kable(var_vit)
 
 #grid.arrange(tableGrob(var_tab,rows=NULL),tableGrob(var_vit,rows=NULL),nrow=2)
 ```
+
 C'est le cas partout sauf pour la variable alcool. Je préfère donc ne pas faire de test avec alcool
-  + ditribution normale : je fais l'approximation que toutes les variables suivent une loi normale, d'autant plus que l'anova est un test qui résiste bien à des ditribution qui s'éloignent un peu de la normale.
+
+- Distribution normale :   
+Je fais l'approximation que toutes les variables suivent une loi normale, d'autant plus que l'anova est un test qui résiste bien à des ditribution qui s'éloignent un peu de la normale.
   
 #### Je fais donc mon ANOVA entre ma variable qualitative et mes variables quantitative (alcool exclue)
 ```{r}
@@ -395,13 +403,13 @@ kable(tab.vit)
 #grid.arrange(tableGrob(tab.vit,rows=NULL))
 ```
 
-interprétation :
+interprétation :  
 - tabac est significativement associée à retplasma et age
 - vitamine est significativement associée à age.
 
 ### Etude du lien entre variables qualitatives  
 
-Je fais un test du chi 2 pour les couples :
+Je fais un test du chi 2 pour les couples :  
 - tabac-vitamine
 - tabac-sexe
 - sexe-vitamine
@@ -417,10 +425,10 @@ Tous les effectifs théoriques sont supérieurs à 5 pour les 3 tableaux de cont
 
 #### Test du Chi2
 
-Le seuil de significativité est p<=0.05 :
-- tabac et vitamine ne sont pas significativement liées :  `r round(chisq.test(rt$tabac,rt$vitamine, correct=FALSE)$p.value,3)`  
-- tabac et sexe sont significativement liées : `r round(chisq.test(rt$tabac,rt$sexe, correct=FALSE)$p.value,3)`
--sexe et vitamine sont significativement liées : `r round(chisq.test(rt$sexe,rt$vitamine, correct=FALSE)$p.value,3)`
+Le seuil de significativité est p<=0.05 :  
+- tabac et vitamine ne sont pas significativement liées :  `r round(chisq.test(rt$tabac,rt$vitamine, correct=FALSE)$p.value,3)`    
+- tabac et sexe sont significativement liées : p value = `r round(chisq.test(rt$tabac,rt$sexe, correct=FALSE)$p.value,3)`  
+-sexe et vitamine sont significativement liées : p value = `r round(chisq.test(rt$sexe,rt$vitamine, correct=FALSE)$p.value,3)`
 
 
 
@@ -435,8 +443,9 @@ Je peux commencer par regarder les intéraction enter retplasma  et les variable
 fpca(retplasma ~ age + sexe + bmi + cholesterol + alcool + retdiet,data=rt)
 ```
 
-2 variables semblent significativement liée à retplasma : age et sexe.  
-En effet age-retplasma est un couple qui ressortait dans la matrice de corrélation avec un r=0.212 significativement différent de 0. sexe-retplasma ne ressortait pas car inférieur à 0.2, comme on peut le voir sur l'acp focalisée.
+2 variables semblent significativement liée à retplasma : age et sexe.    
+- age-retplasma est un couple qui ressortait dans la matrice de corrélation avec un r=0.212 significativement différent de 0.  
+- sexe-retplasma ne ressortait pas car inférieur à 0.2, comme on peut le voir sur l'acp focalisée.
 
 ## régression linéaire multiple
 
@@ -465,7 +474,7 @@ La distribution des résidus a une allure normale, mon modèle est donc valide.
 ```{r , echo=FALSE}
 s <- summary(mod)
 coef<-s$coefficients
-estim <- data.frame(estimate=as.numeric(coef[,1]))
+estim <- data.frame(estimateur=round(as.numeric(coef[,1]),2))
 ciinf <- as.numeric(round(confint(mod),2)[,1])
 cisup <- as.numeric(round(confint(mod),2)[,2])
 estim$CI95 <- paste0("[", ciinf," - ", cisup,"]")
@@ -475,9 +484,11 @@ rownames(estim)<- rownames(coef)
 kable(estim)
 ```
 
-Légende : * p value <= 0.05 soit coefficient beta significativement différent de 0 
+Légende : * p value <= 0.05 soit coefficient beta significativement différent de 0.
 
-- L'age et le sexe sont significativement associés à la concentration plasmatique en retinol. Quand l'âge du sujet augmente d'un an, la concentration augmente de 2.26 unités. J'avais recodé les femmes en 1 et homme en 0, donc les femmes ont une concentration plasmatique en rétinol plus faible que les hommes d'environ 100 unités.
+Interprétation :
+
+- L'age et le sexe sont significativement associés à la concentration plasmatique en retinol (p value<=0.05 et un intervalle de confiance à 95% ne contenant pas 0). Quand l'âge du sujet augmente d'un an, la concentration augmente de 2.26 unités. J'avais recodé les femmes en 1 et homme en 0, donc les femmes ont une concentration plasmatique en rétinol plus faible que les hommes d'environ 100 unités.
 
 - Le coefficient de tabac "autrefois" est significativement différent de "jamais". ceux qui fumaient autrefois ont donc une concentration plasmatique en rétinol significativement plus élevée de 58 unités par rapport à ceux qui n'ont jamais fumé. Par contre on ne retrouve pas cette augmentation chez ceux qui fument actuellement. 
 
@@ -519,9 +530,10 @@ J'ai 9 intéractions significatives : vitamine-alcool, cholestérol-alcool, bmi-
 ```{r, echo=FALSE}
 x <- 1-na.omit(mod_order$Pr..Chi.)
 y <- length(x):1
-plot(x,y,xlab="1-p",ylab="Np")
-line<- lm(1:length(x) ~ -1 + x[length(x):1])
-abline(line)
+g<-ggplot(na.omit(mod_order),aes(x,y))+
+  geom_point(size=2)+
+  xlab("1-p")+ylab("Np")
+g+  geom_abline(slope=coefficients(lm(1:length(x) ~ -1 + x[length(x):1])),color="lightblue4", size=1)
 ```
 
 J'ai bien 9 points au dessus de la ligne.
@@ -535,13 +547,14 @@ La variable à expliquer est binaire, il faut donc faire une régression logisti
 ```{r, echo=FALSE}
 rt$retplasma.bin <- ifelse(rt$retplasma < median(rt$retplasma,na.rm=TRUE), 0,1)
 ```
+
 ```{r}
 mod.bin <- glm(retplasma.bin ~ age + sexe + bmi + tabac + vitamine + cholesterol + alcool + retdiet, data = rt, family = "binomial")
 ```
 
 ### Vérification des conditions de validité
 
-pour que le modèle soit valide, il faut au moins 5 à 10 évènements par variable explicative.
+Pour que le modèle soit valide, il faut au moins 5 à 10 évènements par variable explicative.
 J'ai 6 variables explicatives comptant comme une variable, et 2 variables comptant comme n(classe) - 1 variables soit 2 pour vitamines et 2 pour tabac (sexe est binaire et ne compte donc que pour une variable).
 J'ai donc un total de 10 variables.
 10*5=50
@@ -560,9 +573,9 @@ retplasma.bin : 157 sujets n'ont pas la variable, 158 l'ont. Donc 158 sujets ont
 
 s <- summary(mod.bin)
 coef<-s$coefficients
-estim <- data.frame(estimate=as.numeric(coef[,1]))
-ciinf <- as.numeric(round(confint(mod),2)[,1])
-cisup <- as.numeric(round(confint(mod),2)[,2])
+estim <- data.frame(estimate=round(as.numeric(coef[,1]),4))
+ciinf <- as.numeric(round(confint(mod.bin),4)[,1])
+cisup <- as.numeric(round(confint(mod.bin),4)[,2])
 estim$CI95 <- paste0("[", ciinf," - ", cisup,"]")
 estim$pval <- round(as.numeric(coef[,4]),3)
 estim$signif <- ifelse (estim$pval<=0.05, "*","")
@@ -571,13 +584,20 @@ kable(estim)
 
 ```
 
-Seul le coefficient beta de age est significativement différent de 0. 
+Seul le coefficient beta de age est significativement différent de 0 (c'est également le seul à avoir un intervalle de confiance à 95% ne contenant pas 0).  
 
 Je ne peux pas interpréter les coefficients tels quels, j'interprète uniquement l'exponentiel de ces coefficients qui sont égales aux Odds ratio.
 
-```{r}
-exp(coefficients(mod.bin)) #exponentiel du coefficient donne l'OR
+```{r, echo=FALSE}
+e<- round(exp(coefficients(mod.bin)),3) #exponentiel du coefficient donne l'OR
+e<-data.frame(OR=e)
+e$CI95 <- paste0("[",round(exp(ciinf),3)," - ",round(exp(cisup),3),"]")
+e$signif <- estim$signif
+kable(e)
 ```
+
+légende : * pvalue <= 0.05 soit OR significativement différent de 1
+NB: pour retdiet l'intervalle de confiance est [1-1] à cause de l'arrondi mais contient 1 en réalité.
 
 retplasma.bin n'est pas rare(car j'ai pris la médiane pour le construire...) donc les OR ne peuvent pas être interprétés comme des risques relatifs.
 On voit cependant que le coefficient de l'âge a beau être significatif, le rapport des odds est très proche de 1 donc l'âge est significativement différent mais de très très peu...
@@ -595,13 +615,6 @@ kable(coef)
 
 Ni tabac ni vitamine ne sont globablement associées à retplasma.
 
-```{r}
-a <- drop1(mod.bin,.~.,test="Chisq") #Attention : test= Chisq pour la régression logistique
-tab <- a$`Pr(>Chi)`[rownames(a)=="tabac"]
-vit <- a$`Pr(>Chi)`[rownames(a)=="vitamine"]
-cat("p-value pour tabac : ",round(tab,2),"\np-value pour vitamine : ",round(vit,2))
-```
-Non ils n'en ont pas.
 
 ## Recherche d'intéractions entre les variables explicatives:
 
@@ -632,15 +645,20 @@ length(rownames(.df.bin)[-29]) #nombre d'intéraction (le 29e est none)
 
 Légende : * p value <= 0.05 soit coefficient beta significativement différent de 0
 
+Interprétation :  
+J'ai 5 intéractions significatives : age-alcool, vitamine-alcool, sexe-alcool, cholesterol-alcool, tabac-alcool.
 
 
-Je trace la représentation graphique des pvalue des 28 intéractions possibles
+### Je trace la représentation graphique des pvalue des 28 intéractions possibles
 
 ```{r, echo=FALSE}
 x <- 1-na.omit(mod_order.bin$Pr..Chi.)
 y <- length(x):1
-plot(x,y,xlab="1-p",ylab="Np")
-line<- lm(1:length(x) ~ -1 + x[length(x):1])
-abline(line)
+
+g<-ggplot(na.omit(mod_order),aes(x,y))+
+  geom_point(size=2)+
+  xlab("1-p")+ylab("Np")
+g+  geom_abline(slope=coefficients(lm(1:length(x) ~ -1 + x[length(x):1])),color="lightblue4", size=1)
 ```
+
 J'ai 9 points au dessus de la ligne mais 5 points qui se détachent du groupe. L'interprétation n'est pas aisée.
